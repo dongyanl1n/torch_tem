@@ -84,7 +84,7 @@ else:
     # Save all environment files that are being used in training in the script directory
     for file in set(envs):
         shutil.copy2(file, os.path.join(envs_path, os.path.basename(file)))    
-
+breakpoint()
 # Create a tensor board to stay updated on training progress. Start tensorboard with tensorboard --logdir=runs
 writer = SummaryWriter(train_path)
 # Create a logger to write log output to file
