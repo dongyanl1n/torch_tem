@@ -85,7 +85,7 @@ else:
     # Save all environment files that are being used in training in the script directory
     for file in set(envs):
         shutil.copy2(file, os.path.join(envs_path, os.path.basename(file)))    
-breakpoint()
+
 # Create a tensor board to stay updated on training progress. Start tensorboard with tensorboard --logdir=runs
 writer = SummaryWriter(train_path)
 # Create a logger to write log output to file
@@ -212,7 +212,7 @@ for i in tqdm(range(i_start, params['train_it'])):
     if i % 1000 == 0:
         torch.save(tem.state_dict(), model_path + '/tem_' + str(i) + '.pt')
         torch.save(tem.hyper, model_path + '/params_' + str(i) + '.pt')
-
+writer.close()
 # Save the final state of the model after training has finished
 torch.save(tem.state_dict(), model_path + '/tem_' + str(i) + '.pt')
 torch.save(tem.hyper, model_path + '/params_' + str(i) + '.pt')
