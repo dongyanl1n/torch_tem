@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 import time
 import glob, os, shutil
 import importlib.util
+from tqdm import tqdm
 # Own module imports
 import world
 import utils
@@ -103,7 +104,7 @@ walks = [env.generate_walks(params['n_rollout']*np.random.randint(params['walk_i
 prev_iter = None
 
 # Train TEM on walks in different environment
-for i in range(i_start, params['train_it']):
+for i in tqdm(range(i_start, params['train_it'])):
     
     # Get start time for function timing
     start_time = time.time()
