@@ -43,23 +43,24 @@ tem.load_state_dict(model_weights)
 tem.eval()
 
 # Make list of all the environments that this model was trained on
-envs = list(glob.iglob('./Summaries/' + date + '/run' + run + '/script/envs/*'))
+envs = list(glob.iglob('./Summaries/' + date + '/run' + run + '/script/envs/*'))  # 4
 # Set which environments will include shiny objects
-shiny_envs = [False, False, True, True]
+shiny_envs = [False, False, False, False]
 # Set the number of walks to execute in parallel (batch size)
-n_walks = len(shiny_envs)
+n_walks = len(shiny_envs)  # 4
 # Select environments from the environments included in training
 environments = [world.World(graph, randomise_observations=True, shiny=(params['shiny'] if shiny_envs[env_i] else None)) 
-                for env_i, graph in enumerate(np.random.choice(envs, n_walks))]
+                for env_i, graph in enumerate(np.random.choice(envs, n_walks))]  # 4
 # Determine the length of each walk
-walk_len = np.median([env.n_locations * 50 for env in environments]).astype(int)
+walk_len = np.median([env.n_locations * 50 for env in environments]).astype(int)  # 1250
 # And generate walks for each environment
-walks = [env.generate_walks(walk_len, 1)[0] for env in environments]
+walks = [env.generate_walks(walk_len, 1)[0] for env in environments]  # 4
 
 # Generate model input from specified walk and environment: group steps from all environments together to feed to model in parallel
 model_input = [[[[walks[i][j][k]][0] for i in range(len(walks))] for k in range(3)] for j in range(walk_len)]
+# model_input has same length as walk_len. Each model_input element (i.e. each step) contains 4 inputs (for the 4 parallel envs), each in the form of {'id', 'shiny', 45-dim one-hot vector, action id}
 for i_step, step in enumerate(model_input):
-    model_input[i_step][1] = torch.stack(step[1], dim=0)
+    model_input[i_step][1] = torch.stack(step[1], dim=0)  # reformat model_input
 
 # Run a forward pass through the model using this data, without accumulating gradients
 with torch.no_grad():
@@ -70,18 +71,26 @@ include_stay_still = True
 
 # Compare trained model performance to a node agent and an edge agent
 correct_model, correct_node, correct_edge = analyse.compare_to_agents(forward, tem, environments, include_stay_still=include_stay_still)
+# correct_model: list of 4 lists of 1249 arrays of either T of F
+# correct_node: list of 4 lists of 1249 bools of either T of F
+# correct_edge: list of 4 lists of 1249 bools of either T of F
 
 # Analyse occurrences of zero-shot inference: predict the right observation arriving from a visited node with a new action
 zero_shot = analyse.zero_shot(forward, tem, environments, include_stay_still=include_stay_still)
+# list of 4 lists of 81 arrays of either T of F
 
 # Generate occupancy maps: how much time TEM spends at every location
 occupation = analyse.location_occupation(forward, tem, environments)
+# list of 4 lists of 25 integers. Each integer indicates many times TEM has visited this location in this env. 25 integers sum to 1250.
 
 # Generate rate maps
 g, p = analyse.rate_map(forward, tem, environments)
+# g: list of 4 lists (for 4 envs) of 5 arrays (for 5 steams) of shape (25, n_g) (for 25 locations). Each element is the firing rate of that grid cell (in that stream) at that location in that env.
+# p: list of 4 lists (for 4 envs) of 5 arrays (for 5 steams) of shape (25, n_p). Each element is the firing rate of that place cell (in that stream) at that location in that env.
 
 # Calculate accuracy leaving from and arriving to each location
 from_acc, to_acc = analyse.location_accuracy(forward, tem, environments)
+# both are lists of 4 lists of 25 elements
 
 # Choose which environment to plot
 env_to_plot = 0
