@@ -12,6 +12,7 @@ Created on Mon Mar 30 14:35:30 2020
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
+import os
 
 def plot_weights(models, params = None, steps = None, do_save = False):
     # If no parameter names specified: just take all of the trained ones from the model
@@ -184,7 +185,7 @@ def plot_walk(environment, walk, max_steps=None, n_steps=1, ax=None):
     # Return axes that this was plotted on
     return ax
 
-def plot_cells(p, g, environment, n_f_ovc=0, columns=10):
+def plot_cells(p, g, environment, save_fig_path, n_f_ovc=0, columns=10, do_save=True):
     # Run through all hippocampal and entorhinal rate maps, big nested arrays arranged as [frequency][location][cell]
     for cells, names in zip([p, g],['Hippocampal','Entorhinal']):
         # Calculate the number of rows that each frequency module requires
@@ -207,7 +208,9 @@ def plot_cells(p, g, environment, n_f_ovc=0, columns=10):
                 col = int(c % columns)
                 # Plot rate map for this cell by collection firing rate at each location
                 plot_map(environment, np.array([loc_rates[l][c] for l in range(len(loc_rates))]), ax[row, col], shape='square', radius=1/np.sqrt(len(loc_rates)))
-    
+        if do_save:
+            fig.savefig(os.path.join(save_fig_path, f"{names}.png"))
+
 def initialise_axes(ax=None):
     # If no axes specified: create new figure with new empty axes
     if ax is None:

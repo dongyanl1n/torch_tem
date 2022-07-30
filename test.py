@@ -7,6 +7,8 @@ Created on Thu Jul  2 09:35:57 2020
 """
 
 # Standard library imports
+import os
+
 import numpy as np
 import torch
 import glob
@@ -25,7 +27,7 @@ torch.manual_seed(0)
 date = '2022-07-30' # 2020-10-13 run 0 for successful node agent
 run = '0'
 index = '1999'
-breakpoint()
+# breakpoint()
 # Load the model: use import library to import module from specified path
 model_spec = importlib.util.spec_from_file_location("model", './Summaries/' + date + '/run' + run + '/script/model.py')
 model = importlib.util.module_from_spec(model_spec)
@@ -97,6 +99,10 @@ env_to_plot = 0
 # And when averaging environments, e.g. for calculating average accuracy, decide which environments to include
 envs_to_avg = shiny_envs if shiny_envs[env_to_plot] else [not shiny_env for shiny_env in shiny_envs]
 
+save_fig_path = './Summaries/' + date + '/run' + run + '/analysis_plots'
+if not os.path.exists(save_fig_path):
+    os.mkdir(save_fig_path)
+
 # Plot results of agent comparison and zero-shot inference analysis
 filt_size = 41
 plt.figure()
@@ -106,10 +112,11 @@ plt.plot(analyse.smooth(np.mean(np.array([env for env_i, env in enumerate(correc
 plt.ylim(0, 1)
 plt.legend()
 plt.title('Zero-shot inference: ' + str(np.mean([np.mean(env) for env_i, env in enumerate(zero_shot) if envs_to_avg[env_i]]) * 100) + '%')
-plt.show()
+plt.savefig(os.path.join(save_fig_path, 'zeroshot.png'))
+# plt.show()
 
 # Plot rate maps for all cells
-plot.plot_cells(p[env_to_plot], g[env_to_plot], environments[env_to_plot], n_f_ovc=(params['n_f_ovc'] if 'n_f_ovc' in params else 0), columns = 25)
+plot.plot_cells(p[env_to_plot], g[env_to_plot], environments[env_to_plot], save_fig_path=save_fig_path, n_f_ovc=(params['n_f_ovc'] if 'n_f_ovc' in params else 0), columns = 25)
 
 # Plot accuracy separated by location
 plt.figure()
@@ -119,9 +126,12 @@ ax.set_title('Accuracy to location')
 ax = plt.subplot(1,2,2)
 plot.plot_map(environments[env_to_plot], np.array(from_acc[env_to_plot]), ax)
 ax.set_title('Accuracy from location')
+plt.savefig(os.path.join(save_fig_path, 'accuracy.png'))
 
 # Plot occupation per location, then add walks on top
+plt.figure()
 ax = plot.plot_map(environments[env_to_plot], np.array(occupation[env_to_plot])/sum(occupation[env_to_plot])*environments[env_to_plot].n_locations, 
                    min_val=0, max_val=2, ax=None, shape='square', radius=1/np.sqrt(environments[env_to_plot].n_locations))
 ax = plot.plot_walk(environments[env_to_plot], walks[env_to_plot], ax=ax, n_steps=max(1, int(len(walks[env_to_plot])/500)))
 plt.title('Walk and average occupation')
+plt.savefig(os.path.join(save_fig_path, 'occupation.png'))
