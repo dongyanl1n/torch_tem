@@ -209,7 +209,7 @@ def plot_cells(p, g, environment, save_fig_path, n_f_ovc=0, columns=10, do_save=
                 # Plot rate map for this cell by collection firing rate at each location
                 plot_map(environment, np.array([loc_rates[l][c] for l in range(len(loc_rates))]), ax[row, col], shape='square', radius=1/np.sqrt(len(loc_rates)))
         if do_save:
-            fig.savefig(os.path.join(save_fig_path, f"{names}.png"))
+            fig.savefig(os.path.join(save_fig_path, f"{names}.svg"), format='svg')
 
 def initialise_axes(ax=None):
     # If no axes specified: create new figure with new empty axes

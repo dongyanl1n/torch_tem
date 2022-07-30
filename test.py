@@ -112,7 +112,7 @@ plt.plot(analyse.smooth(np.mean(np.array([env for env_i, env in enumerate(correc
 plt.ylim(0, 1)
 plt.legend()
 plt.title('Zero-shot inference: ' + str(np.mean([np.mean(env) for env_i, env in enumerate(zero_shot) if envs_to_avg[env_i]]) * 100) + '%')
-plt.savefig(os.path.join(save_fig_path, 'zeroshot.png'))
+plt.savefig(os.path.join(save_fig_path, 'zeroshot.svg'), format='svg')
 # plt.show()
 
 # Plot rate maps for all cells
@@ -126,7 +126,7 @@ ax.set_title('Accuracy to location')
 ax = plt.subplot(1,2,2)
 plot.plot_map(environments[env_to_plot], np.array(from_acc[env_to_plot]), ax)
 ax.set_title('Accuracy from location')
-plt.savefig(os.path.join(save_fig_path, 'accuracy.png'))
+plt.savefig(os.path.join(save_fig_path, 'accuracy.svg'), format='svg')
 
 # Plot occupation per location, then add walks on top
 plt.figure()
@@ -134,4 +134,4 @@ ax = plot.plot_map(environments[env_to_plot], np.array(occupation[env_to_plot])/
                    min_val=0, max_val=2, ax=None, shape='square', radius=1/np.sqrt(environments[env_to_plot].n_locations))
 ax = plot.plot_walk(environments[env_to_plot], walks[env_to_plot], ax=ax, n_steps=max(1, int(len(walks[env_to_plot])/500)))
 plt.title('Walk and average occupation')
-plt.savefig(os.path.join(save_fig_path, 'occupation.png'))
+plt.savefig(os.path.join(save_fig_path, 'occupation.svg'), format='svg')
