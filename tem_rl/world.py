@@ -6,7 +6,7 @@ from gym.utils import seeding
 
 
 class Navigation(object):
-    def __init__(self, edge_length):
+    def __init__(self, edge_length, num_objects):
         """
         A edge_length by edge_length grid environment in which agent must navigate to the goal location using as short
         path as possible to receive maximal reward and finish trial.
@@ -21,7 +21,7 @@ class Navigation(object):
         reward = 100 and trial ends.
 
         Observation space: Dict of 'current' (for current observed object) and 'goal' (for goal object), each is integer from 0~24
-        Later on the observation will be one-hot encoded into (edge_length^2, 2); each column is a one-hot vector. The first column is current object, the
+        Later on the observation will be one-hot encoded into (edge_length**2, 2); each column is a one-hot vector. The first column is current object, the
         second column is goal object.
 
         Action space: 5 possible action: 0 = standing still, 1 = up, 2 = right, 3 = down, 4 = left
@@ -29,26 +29,81 @@ class Navigation(object):
         """
         self.reward = 0
         self.edge_length = edge_length
+        self.num_objects = num_objects
+        self.num_locations = edge_length ** 2
         self.done = False
         self.action_space = spaces.Discrete(5)
-        self.observation_space = spaces.Dict({'current': spaces.Discrete(edge_length^2), 'goal': spaces.Discrete(edge_length^2)})
+        self.observation_space = spaces.Dict(
+            {'current_object': spaces.Discrete(self.num_objects), 'goal_object': spaces.Discrete(self.num_objects)})
+        # self.grid = np.arange(self.num_locations).reshape((edge_length, edge_length))
+        self.init_location = None
+        self.goal_location = None
+        self.init_object = None
+        self.goal_object = None
+        self.current_location = None
+        self.current_object = None
+        self.observation = None
+        self.location_to_object = None
         self.seed()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def reset(self):
-        # assign agent to random object
+    def env_reset(self):
+        # reset goal location
+        self.goal_location = np.random.randint(25)
+        # randomly assign objects to locations
+        self.location_to_object = np.eye(self.num_objects)[np.random.randint(self.num_objects, size=self.num_locations)]
+        self.goal_object = self.location_to_object[self.goal_location]
 
+    def trial_reset(self):
+        # Pick a random location
+        self.init_location = np.random.randint(25)
+        self.init_object = self.location_to_object[self.init_location]
+        self.current_location = self.init_location
+        self.current_object = self.init_object
 
     def step(self, action):
         """
         :param action:
         :return: observation, reward, done, info
         """
+        assert self.action_space.contains(action)
+        # step
+        if action == 1:  # up
+            if self.current_location - self.edge_length < 0:  # Walks into top border
+                next_location = self.current_location
+            else:
+                next_location = self.current_location - self.edge_length
+        elif action == 2:  # right
+            if self.current_location + 1 % 5 == 0:  # Walks into right border
+                next_location = self.current_location
+            else:
+                next_location = self.current_location + 1
+        elif action == 3:  # down
+            if self.current_location + self.edge_length > (self.num_locations - 1):  # walks into bottom border
+                next_location = self.current_location
+            else:
+                next_location = self.current_location + self.edge_length
+        elif action == 4:  # left
+            if self.current_location % 5 == 0:  # walks into left border
+                next_location = self.current_location
+            else:
+                next_location = self.current_location - 1
+        elif action == 0:  # stay still
+            next_location = self.current_location
+
+        self.current_location = next_location
+
         # if current object = goal object: finish trial
+        if self.current_location == self.goal_location:
+            self.done = True
+            self.reward = 100
+        else:
+            self.done = False
+            self.reward = -1
 
-        # Take step
+        self.observation = self.location_to_object[self.current_location]
 
-        #
+        return self.observation, self.reward, self.done, {}
