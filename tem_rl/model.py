@@ -7,12 +7,23 @@ from torch.distributions import Categorical
 from collections import namedtuple
 
 
-class baseline_actor_critic_agent(nn.Module):
+class actor_critic_agent(nn.Module):
     """
     An actor-critic neural network that takes 1d sensory input and generates a policy and a value function.
     """
 
     def __init__(self, input_dimensions, action_dimensions, batch_size, hidden_types, hidden_dimensions):
+        """
+           Create an actor-critic network class.
+           - input_dimensions (int): the dimensions of the input space
+           - action_dimensions (int): the number of possible actions
+           - batch_size (int): the size of the batches.
+           - hidden_types (list of strings): the type of hidden layers to use, options are 'linear', 'lstm', 'gru'.
+           If list is empty no hidden layers are used.
+           - hidden_dimensions (list of ints): the dimensions of the hidden layers. Must be a list of
+                                           equal length to hidden_types.
+       """
+
         super(baseline_actor_critic_agent, self).__init__()
         self.input_d = input_dimensions
         assert len(hidden_types) > 0, "must have hidden layer"
