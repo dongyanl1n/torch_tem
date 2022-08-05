@@ -24,7 +24,7 @@ class actor_critic_agent(nn.Module):
                                            equal length to hidden_types.
        """
 
-        super(baseline_actor_critic_agent, self).__init__()
+        super(actor_critic_agent, self).__init__()
         self.input_d = input_dimensions
         assert len(hidden_types) > 0, "must have hidden layer"
         self.hidden_types = hidden_types

@@ -11,16 +11,18 @@ env = Navigation(edge_length=5, num_objects=40)
 baseline_agent = actor_critic_agent(
     input_dimensions=25,
     action_dimensions=5,
+    batch_size=1,
     hidden_types=['linear', 'linear'],
     hidden_dimensions=[128, 128]
 )
 rnn_agent = actor_critic_agent(
     input_dimensions=25,
     action_dimensions=5,
+    batch_size=1,
     hidden_types=['lstm', 'linear'],
     hidden_dimensions=[128, 128]
 )
-
+breakpoint()
 num_envs = 20
 num_episodes_per_env = 1000
 rewards = []
