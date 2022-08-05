@@ -93,7 +93,8 @@ class Navigation(object):
                 next_location = self.current_location - 1
         elif action == 0:  # stay still
             next_location = self.current_location
-
+        if next_location >= self.num_locations:
+            breakpoint()
         assert next_location < self.num_locations, "Next location must be between 0 and 24 inclusive"
 
         self.current_location = next_location
