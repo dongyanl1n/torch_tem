@@ -63,6 +63,8 @@ for i_block in tqdm(range(num_envs)):
 
 plt.figure()
 plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
-plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env), ymin=min(bin_rewards(np.array(rewards)))-5, ymax=max(bin_rewards(np.array(rewards)))+5, linestyles='dotted')
+plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
+           ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
+           ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
 plt.title('Random Policy')
 plt.savefig('random_policy.svg', format='svg')
