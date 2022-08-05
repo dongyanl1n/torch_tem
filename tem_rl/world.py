@@ -94,6 +94,8 @@ class Navigation(object):
         elif action == 0:  # stay still
             next_location = self.current_location
 
+        assert next_location < self.num_locations, "Next location must be between 0 and 24 inclusive"
+
         self.current_location = next_location
 
         # if current object = goal object: finish trial
@@ -103,7 +105,7 @@ class Navigation(object):
         else:
             self.done = False
             self.reward = -1
-        breakpoint()
+
         self.observation = self.location_to_object[self.current_location]
 
         return self.observation, self.reward, self.done, {}
