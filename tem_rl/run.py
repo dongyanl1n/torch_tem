@@ -52,7 +52,7 @@ for i_block in tqdm(range(num_envs)):
         rewards.append([episode_reward])
 
 plt.figure()
-plt.plot(np.arange(num_envs*num_episodes_per_env), moving_average(np.array(rewards), n=1000))
+plt.plot(np.arange(stop=num_envs*num_episodes_per_env, step=len(moving_average(np.array(rewards), n=1000))), moving_average(np.array(rewards), n=1000))
 plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env))
 plt.title('Random Policy')
 plt.savefig('random_policy.svg', format='svg')
