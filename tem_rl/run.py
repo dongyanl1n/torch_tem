@@ -48,4 +48,4 @@ for i_block in tqdm(range(num_envs)):
 plt.figure()
 plt.plot(np.arange(num_envs*num_episodes_per_env), np.array(rewards))
 plt.title('Random Policy')
-plt.show()
+plt.savefig('Random Policy.svg', format='svg')
