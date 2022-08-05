@@ -5,6 +5,7 @@ from world import *
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from datetime import datetime
 
 env = Navigation(edge_length=5, num_objects=40)
@@ -28,9 +29,9 @@ num_episodes_per_env = 1000
 rewards = []
 
 # ===== random policy =====
-for i_block in range(num_envs):
+for i_block in tqdm(range(num_envs)):
     env.env_reset()
-    for i_episode in range(num_episodes_per_env):
+    for i_episode in tqdm(range(num_episodes_per_env)):
         done = False
         env.trial_reset()
         episode_reward = 0
