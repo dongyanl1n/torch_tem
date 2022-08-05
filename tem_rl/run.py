@@ -50,6 +50,7 @@ rewards = []
 # ===== random policy =====
 for i_block in tqdm(range(num_envs)):
     env.env_reset()
+    print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
     for i_episode in tqdm(range(num_episodes_per_env)):
         done = False
         env.trial_reset()
