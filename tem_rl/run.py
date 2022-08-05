@@ -1,5 +1,8 @@
 import random
 import os
+
+import matplotlib
+
 from model import *
 from world import *
 import numpy as np
@@ -7,6 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
+matplotlib.use('Agg')
 
 env = Navigation(edge_length=5, num_objects=40)
 baseline_agent = actor_critic_agent(
