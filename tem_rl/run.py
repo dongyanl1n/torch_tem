@@ -12,6 +12,12 @@ from tqdm import tqdm
 from datetime import datetime
 matplotlib.use('Agg')
 
+
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
 env = Navigation(edge_length=5, num_objects=40)
 baseline_agent = actor_critic_agent(
     input_dimensions=25,
@@ -28,8 +34,8 @@ rnn_agent = actor_critic_agent(
     hidden_dimensions=[128, 128]
 )
 # breakpoint()
-num_envs = 20
-num_episodes_per_env = 1000
+num_envs = 10
+num_episodes_per_env = 100000
 rewards = []
 
 # ===== random policy =====
@@ -46,6 +52,7 @@ for i_block in tqdm(range(num_envs)):
         rewards.append([episode_reward])
 
 plt.figure()
-plt.plot(np.arange(num_envs*num_episodes_per_env), np.array(rewards))
+plt.plot(np.arange(num_envs*num_episodes_per_env), moving_average(np.array(rewards), n=1000))
+plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env))
 plt.title('Random Policy')
-plt.savefig('Random Policy.svg', format='svg')
+plt.savefig('random_policy.svg', format='svg')
