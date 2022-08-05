@@ -13,10 +13,19 @@ from datetime import datetime
 matplotlib.use('Agg')
 
 
-def moving_average(a, n=3) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
+def bin_rewards(epi_rewards, window_size):
+    """
+    Average the epi_rewards with a moving window.
+    """
+    epi_rewards = epi_rewards.astype(np.float32)
+    avg_rewards = np.zeros_like(epi_rewards)
+    for i_episode in range(1, len(epi_rewards)+1):
+        if 1 < i_episode < window_size:
+            avg_rewards[i_episode-1] = np.mean(epi_rewards[:i_episode])
+        elif window_size <= i_episode <= len(epi_rewards):
+            avg_rewards[i_episode-1] = np.mean(epi_rewards[i_episode - window_size: i_episode])
+    return avg_rewards
+
 
 env = Navigation(edge_length=5, num_objects=40)
 baseline_agent = actor_critic_agent(
@@ -50,9 +59,9 @@ for i_block in tqdm(range(num_envs)):
             observation, reward, done, info = env.step(action)
             episode_reward += reward
         rewards.append([episode_reward])
-
+breakpoint()
 plt.figure()
-plt.plot(np.arange(stop=num_envs*num_episodes_per_env, step=len(moving_average(np.array(rewards), n=1000))), moving_average(np.array(rewards), n=1000))
+plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
 plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env))
 plt.title('Random Policy')
 plt.savefig('random_policy.svg', format='svg')
