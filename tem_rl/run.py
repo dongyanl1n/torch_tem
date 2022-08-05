@@ -59,9 +59,9 @@ for i_block in tqdm(range(num_envs)):
             observation, reward, done, info = env.step(action)
             episode_reward += reward
         rewards.append([episode_reward])
-breakpoint()
+
 plt.figure()
 plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
-plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env))
+plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env), ymin=min(rewards), ymax=max(rewards), linestyles='dotted')
 plt.title('Random Policy')
 plt.savefig('random_policy.svg', format='svg')
