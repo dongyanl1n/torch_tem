@@ -23,7 +23,7 @@ rnn_agent = actor_critic_agent(
     hidden_types=['lstm', 'linear'],
     hidden_dimensions=[128, 128]
 )
-breakpoint()
+# breakpoint()
 num_envs = 20
 num_episodes_per_env = 1000
 rewards = []

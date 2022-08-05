@@ -103,7 +103,7 @@ class Navigation(object):
         else:
             self.done = False
             self.reward = -1
-
+        breakpoint()
         self.observation = self.location_to_object[self.current_location]
 
         return self.observation, self.reward, self.done, {}
