@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import array
 import random
@@ -35,7 +36,7 @@ class Navigation(object):
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Dict(
             {'current_object': spaces.Discrete(self.num_objects), 'goal_object': spaces.Discrete(self.num_objects)})
-        # self.grid = np.arange(self.num_locations).reshape((edge_length, edge_length))
+        self.grid = np.arange(self.num_locations).reshape((edge_length, edge_length))
         self.init_location = None
         self.goal_location = None
         self.init_object = None
@@ -109,3 +110,10 @@ class Navigation(object):
         self.observation = self.location_to_object[self.current_location]
 
         return self.observation, self.reward, self.done, {}
+
+    def render(self):
+        image = 255 * np.ones((self.edge_length, self.edge_length, 3))
+        image[self.grid == self.goal_location] = [0, 255, 0]  # Green indicates goal location
+        image[self.grid == self.current_location] = [0, 0, 255]  # Blue indicates current location
+        plt.imshow(image)
+        plt.show()
