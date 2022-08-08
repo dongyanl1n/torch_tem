@@ -26,26 +26,29 @@ def bin_rewards(epi_rewards, window_size):
             avg_rewards[i_episode-1] = np.mean(epi_rewards[i_episode - window_size: i_episode])
     return avg_rewards
 
-
-env = Navigation(edge_length=5, num_objects=40)
-baseline_agent = actor_critic_agent(
-    input_dimensions=40,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['linear', 'linear'],
-    hidden_dimensions=[128, 128]
-)
-rnn_agent = actor_critic_agent(
-    input_dimensions=40,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['lstm', 'linear'],
-    hidden_dimensions=[128, 128]
-)
-
 num_envs = 10
 num_episodes_per_env = 10000
 lr = 1e-4
+edge_length = 5
+num_objects = 40
+num_neurons = 128
+
+env = Navigation(edge_length, num_objects)
+baseline_agent = actor_critic_agent(
+    input_dimensions=num_objects,
+    action_dimensions=5,
+    batch_size=1,
+    hidden_types=['linear', 'linear'],
+    hidden_dimensions=[num_neurons, num_neurons]
+)
+rnn_agent = actor_critic_agent(
+    input_dimensions=num_objects,
+    action_dimensions=5,
+    batch_size=1,
+    hidden_types=['lstm', 'linear'],
+    hidden_dimensions=[num_neurons, num_neurons]
+)
+
 
 def random_policy(env, num_envs, num_episodes_per_env):
 
