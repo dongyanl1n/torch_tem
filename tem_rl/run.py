@@ -81,8 +81,7 @@ for i_block in tqdm(range(num_envs)):
         rnn_agent.reinit_hid()
         # episode_reward = 0
         while not done:
-            breakpoint()
-            pol, val = rnn_agent.forward(env.observation)
+            pol, val = rnn_agent.forward(torch.unsqueeze(torch.as_tensor(env.observation), dim=0).float())
             act, p, v = select_action(rnn_agent, pol, val)
             new_obs, reward, done, info = env.step(act)
             rnn_agent.rewards.append(reward)
