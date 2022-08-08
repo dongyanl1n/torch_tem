@@ -45,8 +45,7 @@ rnn_agent = actor_critic_agent(
 # breakpoint()
 num_envs = 10
 num_episodes_per_env = 10000
-rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
-
+lr = 1e-4
 # ===== random policy =====
 # for i_block in tqdm(range(num_envs)):
 #     env.env_reset()
@@ -70,28 +69,38 @@ rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 # plt.savefig('random_policy.svg', format='svg')
 
 # ======== RL agent ===========
-optimizer = torch.optim.Adam(rnn_agent.parameters(), lr=1e-4)
 
-for i_block in tqdm(range(num_envs)):
-    env.env_reset()
-    print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
-    for i_episode in tqdm(range(num_episodes_per_env)):
-        done = False
-        env.trial_reset()
-        rnn_agent.reinit_hid()
-        # episode_reward = 0
-        while not done:
-            pol, val = rnn_agent.forward(torch.unsqueeze(torch.as_tensor(env.observation), dim=0).float())
-            act, p, v = select_action(rnn_agent, pol, val)
-            new_obs, reward, done, info = env.step(act)
-            rnn_agent.rewards.append(reward)
-        rewards[i_block*num_episodes_per_env + i_episode] = sum(rnn_agent.rewards)
-        p_loss, v_loss = finish_trial(rnn_agent, 0.99, optimizer)
+def train_neural_net(agent, num_envs, num_episodes_per_env, lr):
+    optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
+    rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
-plt.figure()
-plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
-plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-           ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
-           ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
-plt.title('RNN agent')
-plt.savefig('rnn_agent.svg', format='svg')
+    for i_block in tqdm(range(num_envs)):
+        env.env_reset()
+        print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
+        for i_episode in tqdm(range(num_episodes_per_env)):
+            done = False
+            env.trial_reset()
+            agent.reinit_hid()
+            while not done:
+                pol, val = agent.forward(torch.unsqueeze(torch.as_tensor(env.observation), dim=0).float())
+                act, p, v = select_action(agent, pol, val)
+                new_obs, reward, done, info = env.step(act)
+                agent.rewards.append(reward)
+            rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
+            p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+
+    return rewards
+
+
+def plot_results(num_envs, num_episodes_per_env, rewards, title):
+
+    plt.figure()
+    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
+    plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
+               ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
+               ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
+    plt.title(title)
+    plt.savefig(f'{title}.svg', format='svg')
+
+rewards = train_neural_net(rnn_agent, num_envs, num_episodes_per_env, lr)
+plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')
