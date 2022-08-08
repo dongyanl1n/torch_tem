@@ -64,6 +64,7 @@ class Navigation(object):
         self.init_object = self.location_to_object[self.init_location]
         self.current_location = self.init_location
         self.current_object = self.init_object
+        self.observation = self.location_to_object[self.current_location]
 
     def step(self, action):
         """
