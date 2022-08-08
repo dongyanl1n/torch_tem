@@ -42,35 +42,36 @@ rnn_agent = actor_critic_agent(
     hidden_types=['lstm', 'linear'],
     hidden_dimensions=[128, 128]
 )
-# breakpoint()
+
 num_envs = 10
 num_episodes_per_env = 10000
 lr = 1e-4
-# ===== random policy =====
-# for i_block in tqdm(range(num_envs)):
-#     env.env_reset()
-#     print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
-#     for i_episode in tqdm(range(num_episodes_per_env)):
-#         done = False
-#         env.trial_reset()
-#         episode_reward = 0
-#         while not done:
-#             action = env.action_space.sample()
-#             observation, reward, done, info = env.step(action)
-#             episode_reward += reward
-#         rewards.append([episode_reward])
 
-# plt.figure()
-# plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
-# plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-#            ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
-#            ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
-# plt.title('Random Policy')
-# plt.savefig('random_policy.svg', format='svg')
+def random_policy(env, num_envs, num_episodes_per_env):
 
-# ======== RL agent ===========
+    for i_block in tqdm(range(num_envs)):
+        env.env_reset()
+        print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
+        for i_episode in tqdm(range(num_episodes_per_env)):
+            done = False
+            env.trial_reset()
+            episode_reward = 0
+            while not done:
+                action = env.action_space.sample()
+                observation, reward, done, info = env.step(action)
+                episode_reward += reward
+            rewards.append([episode_reward])
 
-def train_neural_net(agent, num_envs, num_episodes_per_env, lr):
+    plt.figure()
+    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
+    plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
+               ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
+               ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
+    plt.title('Random Policy')
+    plt.savefig('random_policy.svg', format='svg')
+
+
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
@@ -102,5 +103,5 @@ def plot_results(num_envs, num_episodes_per_env, rewards, title):
     plt.title(title)
     plt.savefig(f'{title}.svg', format='svg')
 
-rewards = train_neural_net(rnn_agent, num_envs, num_episodes_per_env, lr)
+rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr)
 plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')
