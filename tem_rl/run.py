@@ -29,14 +29,14 @@ def bin_rewards(epi_rewards, window_size):
 
 env = Navigation(edge_length=5, num_objects=40)
 baseline_agent = actor_critic_agent(
-    input_dimensions=25,
+    input_dimensions=40,
     action_dimensions=5,
     batch_size=1,
     hidden_types=['linear', 'linear'],
     hidden_dimensions=[128, 128]
 )
 rnn_agent = actor_critic_agent(
-    input_dimensions=25,
+    input_dimensions=40,
     action_dimensions=5,
     batch_size=1,
     hidden_types=['lstm', 'linear'],
