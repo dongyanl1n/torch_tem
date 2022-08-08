@@ -81,6 +81,7 @@ for i_block in tqdm(range(num_envs)):
         rnn_agent.reinit_hid()
         # episode_reward = 0
         while not done:
+            breakpoint()
             # convert object identity to one-hot vector
             x_t = np.zeros(env.num_objects)
             x_t[env.observation] = 1
