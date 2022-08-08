@@ -45,7 +45,7 @@ rnn_agent = actor_critic_agent(
 # breakpoint()
 num_envs = 10
 num_episodes_per_env = 10000
-rewards = []
+rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
 # ===== random policy =====
 # for i_block in tqdm(range(num_envs)):
@@ -85,7 +85,7 @@ for i_block in tqdm(range(num_envs)):
             act, p, v = select_action(rnn_agent, pol, val)
             new_obs, reward, done, info = env.step(act)
             rnn_agent.rewards.append(reward)
-        rewards.append(sum(rnn_agent.rewards))
+        rewards[i_block*num_episodes_per_env + i_episode] = sum(rnn_agent.rewards)
         p_loss, v_loss = finish_trial(rnn_agent, 0.99, optimizer)
 
 plt.figure()
