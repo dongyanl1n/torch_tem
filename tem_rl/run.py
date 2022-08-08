@@ -10,6 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
+import argparse
 matplotlib.use('Agg')
 
 
@@ -25,29 +26,6 @@ def bin_rewards(epi_rewards, window_size):
         elif window_size <= i_episode <= len(epi_rewards):
             avg_rewards[i_episode-1] = np.mean(epi_rewards[i_episode - window_size: i_episode])
     return avg_rewards
-
-num_envs = 10
-num_episodes_per_env = 10000
-lr = 1e-4
-edge_length = 5
-num_objects = 40
-num_neurons = 128
-
-env = Navigation(edge_length, num_objects)
-baseline_agent = actor_critic_agent(
-    input_dimensions=num_objects,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['linear', 'linear'],
-    hidden_dimensions=[num_neurons, num_neurons]
-)
-rnn_agent = actor_critic_agent(
-    input_dimensions=num_objects,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['lstm', 'linear'],
-    hidden_dimensions=[num_neurons, num_neurons]
-)
 
 
 def random_policy(env, num_envs, num_episodes_per_env):
@@ -105,6 +83,41 @@ def plot_results(num_envs, num_episodes_per_env, rewards, title):
                ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
     plt.title(title)
     plt.savefig(f'{title}.svg', format='svg')
+
+
+parser = argparse.ArgumentParser(description="Run neural networks on tem-rl")
+parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
+parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
+parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
+parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
+parser.add_argument("--num_objects",type=int,default=40,help="Number of object that could be associated with different locations of the environment")
+parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
+args = parser.parse_args()
+argsdict = args.__dict__
+
+num_envs = argsdict['num_envs']
+num_episodes_per_env = argsdict['num_episodes_per_env']
+lr = argsdict['lr']
+edge_length = argsdict['edge_length']
+num_objects = argsdict['num_objects']
+num_neurons = argsdict['num_neurons']
+
+env = Navigation(edge_length, num_objects)
+baseline_agent = actor_critic_agent(
+    input_dimensions=num_objects,
+    action_dimensions=5,
+    batch_size=1,
+    hidden_types=['linear', 'linear'],
+    hidden_dimensions=[num_neurons, num_neurons]
+)
+rnn_agent = actor_critic_agent(
+    input_dimensions=num_objects,
+    action_dimensions=5,
+    batch_size=1,
+    hidden_types=['lstm', 'linear'],
+    hidden_dimensions=[num_neurons, num_neurons]
+)
+
 
 rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr)
 plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')
