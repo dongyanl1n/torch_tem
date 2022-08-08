@@ -44,7 +44,7 @@ rnn_agent = actor_critic_agent(
 )
 # breakpoint()
 num_envs = 10
-num_episodes_per_env = 100000
+num_episodes_per_env = 10000
 rewards = []
 
 # ===== random policy =====
