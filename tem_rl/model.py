@@ -31,6 +31,9 @@ class actor_critic_agent(nn.Module):
         self.batch_size = batch_size
         assert len(hidden_types) is len(hidden_dimensions)
 
+        # use gpu
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+
         # to store a record of the last hidden states
         self.hx = []
         self.cx = []
@@ -50,11 +53,11 @@ class actor_critic_agent(nn.Module):
                     self.cx.append(None)
                 elif htype is 'lstm':
                     self.hidden.append(nn.LSTMCell(input_d, output_d))
-                    self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
-                    self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                    self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
+                    self.cx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                 elif htype is 'gru':
                     self.hidden.append(nn.GRUCell(input_d, output_d))
-                    self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                    self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                     self.cx.append(None)
             # second hidden layer onwards
             else:
@@ -86,6 +89,8 @@ class actor_critic_agent(nn.Module):
         self.saved_actions = []
         self.rewards = []
 
+        self.to(self.device)
+
     def forward(self, x):
         '''
         forward(x):
@@ -96,7 +101,7 @@ class actor_critic_agent(nn.Module):
 
         # check the inputs
         assert x.shape[-1] == self.input_d
-
+        x = x.to(self.device)
         # pass the data through each hidden layer
         for i, layer in enumerate(self.hidden):
             # run input through the layer depending on type
@@ -125,10 +130,10 @@ class actor_critic_agent(nn.Module):
                 self.hx.append(None)
                 self.cx.append(None)
             elif isinstance(layer, nn.LSTMCell):
-                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
-                self.cx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
+                self.cx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
             elif isinstance(layer, nn.GRUCell):
-                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
                 self.cx.append(None)
 
 # ======================================
@@ -170,12 +175,12 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
     policy_losses = []
     value_losses = []
 
-    returns_ = torch.Tensor(returns_)
+    returns_ = torch.Tensor(returns_).to(model.device)
 
     for (log_prob, value), r in zip(saved_actions, returns_):
         rpe = r - value.item()
         policy_losses.append(-log_prob * rpe)
-        value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]))).unsqueeze(-1))
+        value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]).to(model.device))).unsqueeze(-1))
         #   return policy_losses, value_losses
     optimizer.zero_grad() # clear gradient
     p_loss = (torch.cat(policy_losses).sum())
