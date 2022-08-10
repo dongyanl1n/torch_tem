@@ -68,6 +68,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr):
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
+            print(f"This episode has {len(agent.rewards)} steps")
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
             p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
 
@@ -102,6 +103,8 @@ edge_length = argsdict['edge_length']
 num_objects = argsdict['num_objects']
 num_neurons = argsdict['num_neurons']
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+
 env = Navigation(edge_length, num_objects)
 baseline_agent = actor_critic_agent(
     input_dimensions=num_objects,
@@ -109,14 +112,14 @@ baseline_agent = actor_critic_agent(
     batch_size=1,
     hidden_types=['linear', 'linear'],
     hidden_dimensions=[num_neurons, num_neurons]
-)
+).to(device)
 rnn_agent = actor_critic_agent(
     input_dimensions=num_objects,
     action_dimensions=5,
     batch_size=1,
     hidden_types=['lstm', 'linear'],
     hidden_dimensions=[num_neurons, num_neurons]
-)
+).to(device)
 
 
 rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr)

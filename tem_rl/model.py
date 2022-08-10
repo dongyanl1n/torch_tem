@@ -192,4 +192,7 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
     del model.rewards[:]
     del model.saved_actions[:]
 
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     return p_loss, v_loss
