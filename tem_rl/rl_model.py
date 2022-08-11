@@ -209,7 +209,7 @@ def finish_trial_truncated_BPTT(model, discount_factor, optimizer, truncate_wind
     v_losses = []
 
     for i_window in range(num_windows):  # roll window in forward direction
-
+        breakpoint()
         start_idx = i_window
         end_idx = i_window + truncate_window_size
 
