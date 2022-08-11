@@ -3,8 +3,8 @@ import os
 
 import matplotlib
 
-from model import *
-from world import *
+from rl_model import *
+from rl_world import *
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -52,7 +52,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
     plt.savefig('random_policy.svg', format='svg')
 
 
-def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr):
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
@@ -68,9 +68,12 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr):
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
-            print(f"This episode has {len(agent.rewards)} steps")
+            # print(f"This episode has {len(agent.rewards)} steps")
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
-            p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            if len(agent.rewards) <= n_rollout:
+                p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            else:
+                p_losses, v_losses = finish_trial_truncated_BPTT(agent, 0.99, optimizer, n_rollout)
 
     return rewards
 
@@ -93,6 +96,7 @@ parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
 parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
 parser.add_argument("--num_objects",type=int,default=40,help="Number of object that could be associated with different locations of the environment")
 parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
+parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -102,6 +106,7 @@ lr = argsdict['lr']
 edge_length = argsdict['edge_length']
 num_objects = argsdict['num_objects']
 num_neurons = argsdict['num_neurons']
+n_rollout = argsdict["n_rollout"]
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
@@ -122,5 +127,5 @@ rnn_agent = actor_critic_agent(
 ).to(device)
 
 
-rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr)
+rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
 plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')

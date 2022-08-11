@@ -196,3 +196,52 @@ def finish_trial(model, discount_factor, optimizer, **kwargs):
         torch.cuda.empty_cache()
 
     return p_loss, v_loss
+
+
+def finish_trial_truncated_BPTT(model, discount_factor, optimizer, truncate_window_size, **kwargs):
+    '''
+    Finishes a given training trial and backpropagates, using truncated backpropagation through time (BPTT).
+    '''
+    assert len(model.rewards) == len(model.saved_actions)
+    sequence_length = len(model.rewards)
+    num_windows = sequence_length - truncate_window_size + 1
+    p_losses = []
+    v_losses = []
+
+    for i_window in range(num_windows):  # roll window in forward direction
+
+        start_idx = i_window
+        end_idx = i_window + truncate_window_size
+
+        # set the return to zero
+        R = 0
+        returns_ = discount_rwds(np.asarray(model.rewards[start_idx, end_idx]), gamma=discount_factor)  # [1,1,1,1] into [3.439,2.71,1.9,1]
+        saved_actions = model.saved_actions[start_idx, end_idx]
+
+        policy_losses = []
+        value_losses = []
+
+        returns_ = torch.Tensor(returns_).to(model.device)
+
+        for (log_prob, value), r in zip(saved_actions, returns_):
+            rpe = r - value.item()
+            policy_losses.append(-log_prob * rpe)
+            value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([[r]]).to(model.device))).unsqueeze(-1))
+            #   return policy_losses, value_losses
+        optimizer.zero_grad() # clear gradient
+        p_loss = (torch.cat(policy_losses).sum())
+        v_loss = (torch.cat(value_losses).sum())
+        total_loss = p_loss + v_loss
+        total_loss.backward(retain_graph=True) # calculate gradient
+        optimizer.step()  # move down gradient
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        p_losses.append(p_loss.detach())
+        v_losses.append(v_loss.detach())
+
+    del model.rewards[:]
+    del model.saved_actions[:]
+
+    return p_losses, v_losses
