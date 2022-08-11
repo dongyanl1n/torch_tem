@@ -209,14 +209,14 @@ def finish_trial_truncated_BPTT(model, discount_factor, optimizer, truncate_wind
     v_losses = []
 
     for i_window in range(num_windows):  # roll window in forward direction
-        breakpoint()
+
         start_idx = i_window
         end_idx = i_window + truncate_window_size
 
         # set the return to zero
         R = 0
-        returns_ = discount_rwds(np.asarray(model.rewards[start_idx, end_idx]), gamma=discount_factor)  # [1,1,1,1] into [3.439,2.71,1.9,1]
-        saved_actions = model.saved_actions[start_idx, end_idx]
+        returns_ = discount_rwds(np.asarray(model.rewards[start_idx:end_idx]), gamma=discount_factor)  # [1,1,1,1] into [3.439,2.71,1.9,1]
+        saved_actions = model.saved_actions[start_idx:end_idx]
 
         policy_losses = []
         value_losses = []
