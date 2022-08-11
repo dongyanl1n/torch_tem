@@ -126,6 +126,6 @@ rnn_agent = actor_critic_agent(
     hidden_dimensions=[num_neurons, num_neurons]
 ).to(device)
 
-
+torch.autograd.set_detect_anomaly(True)
 rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
 plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')
