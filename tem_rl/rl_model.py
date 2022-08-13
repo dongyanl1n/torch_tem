@@ -241,7 +241,6 @@ def finish_trial_truncated_BPTT(model, discount_factor, optimizer, truncate_wind
         p_losses.append(p_loss.detach())
         v_losses.append(v_loss.detach())
 
-        model.reinit_hid()
 
     del model.rewards[:]
     del model.saved_actions[:]
