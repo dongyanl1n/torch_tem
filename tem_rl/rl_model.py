@@ -136,6 +136,59 @@ class actor_critic_agent(nn.Module):
                 self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
                 self.cx.append(None)
 
+
+class AC_MLP(torch.nn.Module):
+    def __init__(self, input_size, hidden_size, action_size):
+        super(AC_MLP, self).__init__()
+        assert type(hidden_size) == list and len(hidden_size) == 2
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.action_size = action_size
+        self.fc1 = torch.nn.Linear(self.input_size, self.hidden_size[0])
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(self.hidden_size[0], self.hidden_size[1])
+        self.sigmoid = torch.nn.Sigmoid()
+        self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
+        self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+
+    def forward(self, x):
+        hidden = self.fc1(x)
+        relu = self.relu(hidden)
+        output = self.fc2(relu)
+        output = self.sigmoid(output)
+        policy = F.softmax(self.actor(output), dim=1)
+        value = self.critic(output)
+        return policy, value
+
+
+class AC_RNN(torch.nn.Module):
+    def __init__(self, input_size, hidden_size, num_LSTM_layers, action_size):
+        super(AC_RNN, self).__init__()
+        assert type(hidden_size) == list and len(hidden_size) == 2
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.action_size = action_size
+        self.num_LSTM_layers = num_LSTM_layers  # number of LSTM layers
+        self.lstm = torch.nn.LSTM(self.input_size, self.hidden_size[0], self.num_LSTM_layers)  # TODO: add a dropout layer?
+        self.linear = torch.nn.Linear(self.hidden_size[0], self.hidden_size[1])
+        self.relu = torch.nn.ReLU()
+        self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
+        self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+
+    def initialize_hidden_state(self):
+        self.hidden = (torch.randn(1, self.input_size, self.hidden_size[0]),  # hx
+                       torch.randn(1, self.input_size, self.hidden_size[0]))  # cx
+
+    def forward(self, x):
+        assert x.shape[-1] == self.input_size
+        out, self.hidden = self.lstm(x, self.hidden)
+        output = self.linear(out)
+        output = self.relu(output)
+        policy = F.softmax(self.actor(output), dim=1)
+        value = self.critic(output)
+        return policy, value
+
+
 # ======================================
 
 # ---------- helper functions ----------
