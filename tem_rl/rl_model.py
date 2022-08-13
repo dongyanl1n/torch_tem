@@ -150,6 +150,8 @@ class AC_MLP(torch.nn.Module):
         self.sigmoid = torch.nn.Sigmoid()
         self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
         self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+        self.saved_actions = []
+        self.rewards = []
 
     def forward(self, x):
         hidden = self.fc1(x)
@@ -174,6 +176,8 @@ class AC_RNN(torch.nn.Module):
         self.relu = torch.nn.ReLU()
         self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
         self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+        self.saved_actions = []
+        self.rewards = []
 
     def initialize_hidden_state(self):
         self.hidden = (torch.randn(1, self.input_size, self.hidden_size[0]),  # hx
