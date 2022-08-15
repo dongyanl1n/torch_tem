@@ -185,6 +185,7 @@ class AC_RNN(torch.nn.Module):
 
     def forward(self, x):
         assert x.shape[-1] == self.input_size
+        breakpoint()
         out, self.hidden = self.lstm(x, self.hidden)
         output = self.linear(out)
         output = self.relu(output)
