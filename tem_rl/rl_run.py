@@ -71,10 +71,11 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
                 agent.rewards.append(reward)
             # print(f"This episode has {len(agent.rewards)} steps")
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
-            if len(agent.rewards) <= n_rollout:
-                p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-            else:
-                p_losses, v_losses = finish_trial_truncated_BPTT(agent, 0.99, optimizer, n_rollout)
+            p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            # if len(agent.rewards) <= n_rollout:
+            #     p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            # else:
+            #     p_losses, v_losses = finish_trial_truncated_BPTT(agent, 0.99, optimizer, n_rollout)
 
     return rewards
 
