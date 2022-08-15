@@ -180,8 +180,8 @@ class AC_RNN(torch.nn.Module):
         self.rewards = []
 
     def reinit_hid(self):
-        self.hidden = (torch.randn(1, self.input_size, self.hidden_size[0]),  # hx
-                       torch.randn(1, self.input_size, self.hidden_size[0]))  # cx
+        self.hidden = (torch.randn(self.num_LSTM_layers, self.hidden_size[0]),  # hx: (#layers, hidden_size)
+                       torch.randn(self.num_LSTM_layers, self.hidden_size[0]))  # cx: (#layers, hidden_size)
 
     def forward(self, x):
         assert x.shape[-1] == self.input_size
