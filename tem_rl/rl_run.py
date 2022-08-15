@@ -65,7 +65,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
-                pol, val = agent.forward(torch.unsqueeze(torch.as_tensor(env.observation), dim=0).float())
+                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(env.observation), dim=0), dim=1).float())
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
@@ -135,6 +135,7 @@ baseline_agent = AC_MLP(
 rnn_agent = AC_RNN(
     input_size=num_objects,
     hidden_size=[num_neurons,num_neurons],  # LSTM, linear
+    batch_size=1,
     num_LSTM_layers=1,
     action_size=5
 )

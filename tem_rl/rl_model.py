@@ -164,12 +164,13 @@ class AC_MLP(torch.nn.Module):
 
 
 class AC_RNN(torch.nn.Module):
-    def __init__(self, input_size, hidden_size, num_LSTM_layers, action_size):
+    def __init__(self, input_size, hidden_size, batch_size, num_LSTM_layers, action_size):
         super(AC_RNN, self).__init__()
         assert type(hidden_size) == list and len(hidden_size) == 2
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.action_size = action_size
+        self.batch_size = batch_size
         self.num_LSTM_layers = num_LSTM_layers  # number of LSTM layers
         self.lstm = torch.nn.LSTM(self.input_size, self.hidden_size[0], self.num_LSTM_layers)  # TODO: add a dropout layer?
         self.linear = torch.nn.Linear(self.hidden_size[0], self.hidden_size[1])
@@ -180,11 +181,13 @@ class AC_RNN(torch.nn.Module):
         self.rewards = []
 
     def reinit_hid(self):
-        self.hidden = (torch.randn(self.num_LSTM_layers, self.hidden_size[0]),  # hx: (#layers, hidden_size)
-                       torch.randn(self.num_LSTM_layers, self.hidden_size[0]))  # cx: (#layers, hidden_size)
+        self.hidden = (torch.randn(self.num_LSTM_layers, self.batch_size, self.hidden_size[0]),  # hx: (#layers, hidden_size)
+                       torch.randn(self.num_LSTM_layers, self.batch_size, self.hidden_size[0]))  # cx: (#layers, hidden_size)
 
     def forward(self, x):
+        assert x.dim() == 3
         assert x.shape[-1] == self.input_size
+        assert x.shape[-2] == self.batch_size
         breakpoint()
         out, self.hidden = self.lstm(x, self.hidden)
         output = self.linear(out)
