@@ -150,6 +150,7 @@ class AC_MLP(torch.nn.Module):
         self.sigmoid = torch.nn.Sigmoid()
         self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
         self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
         self.saved_actions = []
         self.rewards = []
 
@@ -177,6 +178,7 @@ class AC_RNN(torch.nn.Module):
         self.relu = torch.nn.ReLU()
         self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
         self.critic = torch.nn.Linear(self.hidden_size[1], 1)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
         self.saved_actions = []
         self.rewards = []
 
