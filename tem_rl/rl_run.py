@@ -57,6 +57,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
     for i_block in tqdm(range(num_envs)):
+        breakpoint()
         env.env_reset()
         print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
         for i_episode in tqdm(range(num_episodes_per_env)):
