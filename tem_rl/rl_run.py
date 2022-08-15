@@ -138,7 +138,7 @@ rnn_agent = AC_RNN(
     batch_size=1,
     num_LSTM_layers=1,
     action_size=5
-)
+).to(device)
 
 
 torch.autograd.set_detect_anomaly(True)
