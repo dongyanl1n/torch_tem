@@ -155,6 +155,7 @@ class AC_MLP(torch.nn.Module):
         self.rewards = []
 
     def forward(self, x):
+        x = x.to(self.device)
         hidden = self.fc1(x)
         relu = self.relu(hidden)
         output = self.fc2(relu)
@@ -190,6 +191,7 @@ class AC_RNN(torch.nn.Module):
         assert x.dim() == 3
         assert x.shape[-1] == self.input_size
         assert x.shape[-2] == self.batch_size
+        x = x.to(self.device)
         out, self.hidden = self.lstm(x, self.hidden)
         output = self.linear(out)
         output = self.relu(output)
