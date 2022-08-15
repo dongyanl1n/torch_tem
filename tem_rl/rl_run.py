@@ -65,7 +65,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
-                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(env.observation), dim=0), dim=1).float())
+                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(env.observation), dim=0), dim=1).float())  # TODO: differentiate between inputs for AC_MLP, AC_RNN, and actor_critic_agent
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
@@ -80,13 +80,13 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     return rewards
 
 
-def plot_results(num_envs, num_episodes_per_env, rewards, title):
+def plot_results(num_envs, num_episodes_per_env, rewards, window_size, title):
 
     plt.figure()
-    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
+    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=window_size))
     plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-               ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
-               ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
+               ymin=min(bin_rewards(np.array(rewards), window_size=window_size))-5,
+               ymax=max(bin_rewards(np.array(rewards), window_size=window_size))+5, linestyles='dotted')
     plt.title(title)
     plt.savefig(f'{title}.svg', format='svg')
 
@@ -99,6 +99,7 @@ parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for 
 parser.add_argument("--num_objects",type=int,default=40,help="Number of object that could be associated with different locations of the environment")
 parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
 parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
+parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -109,6 +110,7 @@ edge_length = argsdict['edge_length']
 num_objects = argsdict['num_objects']
 num_neurons = argsdict['num_neurons']
 n_rollout = argsdict["n_rollout"]
+window_size = argsdict["window_size"]
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
@@ -143,5 +145,7 @@ rnn_agent = AC_RNN(
 
 
 torch.autograd.set_detect_anomaly(True)
-rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-plot_results(num_envs, num_episodes_per_env, rewards, 'rnn_agent')
+# rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+# plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'rnn_agent')
+rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'mlp_agent')
