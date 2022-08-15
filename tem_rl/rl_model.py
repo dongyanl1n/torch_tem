@@ -179,7 +179,7 @@ class AC_RNN(torch.nn.Module):
         self.saved_actions = []
         self.rewards = []
 
-    def initialize_hidden_state(self):
+    def reinit_hid(self):
         self.hidden = (torch.randn(1, self.input_size, self.hidden_size[0]),  # hx
                        torch.randn(1, self.input_size, self.hidden_size[0]))  # cx
 
