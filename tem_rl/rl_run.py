@@ -62,7 +62,8 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
         for i_episode in tqdm(range(num_episodes_per_env)):
             done = False
             env.trial_reset()
-            agent.reinit_hid()
+            if not isinstance(agent, AC_MLP):
+                agent.reinit_hid()
             while not done:
                 pol, val = agent.forward(torch.unsqueeze(torch.as_tensor(env.observation), dim=0).float())
                 act, p, v = select_action(agent, pol, val)
@@ -111,20 +112,33 @@ n_rollout = argsdict["n_rollout"]
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 env = Navigation(edge_length, num_objects)
-baseline_agent = actor_critic_agent(
-    input_dimensions=num_objects,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['linear', 'linear'],
-    hidden_dimensions=[num_neurons, num_neurons]
+# baseline_agent = actor_critic_agent(
+#     input_dimensions=num_objects,
+#     action_dimensions=5,
+#     batch_size=1,
+#     hidden_types=['linear', 'linear'],
+#     hidden_dimensions=[num_neurons, num_neurons]
+# ).to(device)
+# rnn_agent = actor_critic_agent(
+#     input_dimensions=num_objects,
+#     action_dimensions=5,
+#     batch_size=1,
+#     hidden_types=['lstm', 'linear'],
+#     hidden_dimensions=[num_neurons, num_neurons]
+# ).to(device)
+
+baseline_agent = AC_MLP(
+    input_size=num_objects,
+    hidden_size=[num_neurons, num_neurons],  # linear, linear
+    action_size=5
 ).to(device)
-rnn_agent = actor_critic_agent(
-    input_dimensions=num_objects,
-    action_dimensions=5,
-    batch_size=1,
-    hidden_types=['lstm', 'linear'],
-    hidden_dimensions=[num_neurons, num_neurons]
-).to(device)
+rnn_agent = AC_RNN(
+    input_size=num_objects,
+    hidden_size=[num_neurons,num_neurons],  # LSTM, linear
+    num_LSTM_layers=1,
+    action_size=5
+)
+
 
 torch.autograd.set_detect_anomaly(True)
 rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
