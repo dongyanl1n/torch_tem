@@ -1,6 +1,5 @@
 # Standard library imports
 import os
-breakpoint()
 import numpy as np
 import torch
 import glob
@@ -24,7 +23,7 @@ torch.manual_seed(0)
 # Choose which trained model to load
 date = '2022-07-31' # 2020-10-13 run 0 for successful node agent
 run = '0'
-index = '1999'  # TODO: argparser so that we can make a loop in sh script to loop through models of different indices
+index = '1000'  # TODO: argparser so that we can make a loop in sh script to loop through models of different indices
 # breakpoint()
 # Load the model: use import library to import module from specified path
 model_spec = importlib.util.spec_from_file_location("model", './Summaries/' + date + '/run' + run + '/script/model.py')
@@ -75,7 +74,7 @@ include_stay_still = True
 g, p = analyse.rate_map(forward, tem, environments)
 # g: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_g) (for 25 locations). Each element is the firing rate of that grid cell (in that stream) at that location in that env.
 # p: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_p). Each element is the firing rate of that place cell (in that stream) at that location in that env.
-
+breakpoint()
 g_cat = np.concatenate(g)
 p_cat = np.concatenate(p)
 # ======== MAKING IT RL ============
