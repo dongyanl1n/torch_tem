@@ -78,6 +78,7 @@ num_episodes_per_env = 1000
 lr = 0.0001
 n_rollout = 20
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 rl_env = Navigation(edge_length, num_objects)
 
@@ -85,14 +86,14 @@ downstream_mlp_agent = AC_MLP(
     input_size=len(p_cat),
     hidden_size=[num_neurons, num_neurons],
     action_size=5
-)
+).to(device)
 downstream_rnn_agent = AC_RNN(
     input_size=len(p_cat),
     hidden_size=[num_neurons, num_neurons],
     batch_size=1,
     num_LSTM_layers=1,
     action_size=5
-)
+).to(device)
 
 torch.autograd.set_detect_anomaly(True)
 rewards = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
