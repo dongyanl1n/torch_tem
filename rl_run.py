@@ -26,6 +26,8 @@ def bin_rewards(epi_rewards, window_size):
 
 def random_policy(env, num_envs, num_episodes_per_env):
 
+    rewards = []
+
     for i_block in tqdm(range(num_envs)):
         env.env_reset()
         print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
@@ -39,13 +41,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
                 episode_reward += reward
             rewards.append([episode_reward])
 
-    plt.figure()
-    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=1000))
-    plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-               ymin=min(bin_rewards(np.array(rewards), window_size=1000))-5,
-               ymax=max(bin_rewards(np.array(rewards), window_size=1000))+5, linestyles='dotted')
-    plt.title('Random Policy')
-    plt.savefig('random_policy.svg', format='svg')
+    return rewards
 
 
 def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
@@ -87,7 +83,7 @@ def plot_results(num_envs, num_episodes_per_env, rewards, window_size, title):
     plt.savefig(f'{title}.svg', format='svg')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run neural networks on tem-rl")
+    parser = argparse.ArgumentParser(description="Run neural networks on tem-rl environment")
     parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
     parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
     parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
@@ -109,6 +105,8 @@ if __name__ == "__main__":
     n_rollout = argsdict["n_rollout"]
     window_size = argsdict["window_size"]
     agent_type = argsdict["agent_type"]
+
+    print(argsdict)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
