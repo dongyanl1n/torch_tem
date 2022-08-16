@@ -6,7 +6,8 @@ import world
 import analyse
 from rl_world import Navigation
 from rl_model import *
-from rl_run import train_neural_net, plot_results
+from rl_run import plot_results
+from tqdm import tqdm
 
 # Set random seeds for reproducibility
 np.random.seed(0)
@@ -96,5 +97,33 @@ downstream_rnn_agent = AC_RNN(
 ).to(device)
 
 torch.autograd.set_detect_anomaly(True)
-rewards = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+# rewards = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+
+
+def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
+    optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
+    rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
+
+    for i_block in tqdm(range(num_envs)):
+        env.env_reset()
+        print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
+        for i_episode in tqdm(range(num_episodes_per_env)):
+            done = False
+            env.trial_reset()
+            if not isinstance(agent, AC_MLP):
+                agent.reinit_hid()
+            while not done:
+                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(p_cat), dim=0), dim=1).float())  # TODO: YOU CAN'T JUST INPUT P_CAT FFS
+                act, p, v = select_action(agent, pol, val)
+                new_obs, reward, done, info = env.step(act)
+                agent.rewards.append(reward)
+            # print(f"This episode has {len(agent.rewards)} steps")
+            rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
+            p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+
+    return rewards
+
+
+rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+
 plot_results(num_envs, num_episodes_per_env, rewards, 'mlp_readout_agent')
