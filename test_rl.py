@@ -97,6 +97,7 @@ downstream_mlp_agent = AC_MLP(
 downstream_rnn_agent = AC_RNN(
     input_size=len(p_cat),
     hidden_size=[num_neurons, num_neurons],
+    batch_size=1,
     num_LSTM_layers=1,
     action_size=5
 )
