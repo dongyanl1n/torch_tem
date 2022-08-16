@@ -13,13 +13,14 @@ import plot
 from tem_rl.rl_world import Navigation
 from tem_rl.rl_model import *
 from tem_rl.rl_run import train_neural_net, plot_results
+import argparse
 
 # Set random seeds for reproducibility
 np.random.seed(0)
 torch.manual_seed(0)
 
 # Choose which trained model to load
-date = '2022-07-30' # 2020-10-13 run 0 for successful node agent
+date = '2022-07-31' # 2020-10-13 run 0 for successful node agent
 run = '0'
 index = '1999'  # TODO: argparser so that we can make a loop in sh script to loop through models of different indices
 # breakpoint()
@@ -73,6 +74,7 @@ g, p = analyse.rate_map(forward, tem, environments)
 # g: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_g) (for 25 locations). Each element is the firing rate of that grid cell (in that stream) at that location in that env.
 # p: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_p). Each element is the firing rate of that place cell (in that stream) at that location in that env.
 
+breakpoint()
 g_cat = np.concatenate(g)
 p_cat = np.concatenate(p)
 # ======== MAKING IT RL ============
@@ -80,7 +82,7 @@ edge_length = 5  # TODO: is there a param in TEM that determines the edge length
 num_objects = params['n_x']
 num_neurons = 128
 num_envs = 10
-num_episodes_per_env = 10000
+num_episodes_per_env = 1000
 lr = 0.0001
 n_rollout = 20
 
