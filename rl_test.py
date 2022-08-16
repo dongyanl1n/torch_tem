@@ -8,16 +8,36 @@ from rl_world import Navigation
 from rl_model import *
 from rl_run import plot_results
 from tqdm import tqdm
+import argparse
 
 # Set random seeds for reproducibility
 np.random.seed(0)
 torch.manual_seed(0)
 
+parser = argparse.ArgumentParser(description="Run neural networks on tem-rl environment")
+parser.add_argument("--date",type=str,default='2022-07-31',help='Date to load model')
+parser.add_argument("--run",type=str,default='0',help="Run to load model")
+parser.add_argument("--index",type=float,default=1000,help="Model index (i.e. how many pretraining episodes in) to load model")
+
+parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
+parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
+parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
+parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
+# parser.add_argument("--num_objects",type=int,default=45,help="Number of object that could be associated with different locations of the environment")
+parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
+parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
+parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
+parser.add_argument("--agent_type", type=str, default='mlp', help="type of agent to use. Either 'rnn' or 'mlp'.")
+args = parser.parse_args()
+argsdict = args.__dict__
+
+print(argsdict)
+
 # Choose which trained model to load
-date = '2022-07-31' # 2020-10-13 run 0 for successful node agent
-run = '0'
-index = '1000'  # TODO: argparser so that we can make a loop in sh script to loop through models of different indices
-# breakpoint()
+date = argsdict["date"]
+run = argsdict["run"]
+index = argsdict["index"]
+
 # Load the model: use import library to import module from specified path
 model_spec = importlib.util.spec_from_file_location("model", './Summaries/' + date + '/run' + run + '/script/model.py')
 model = importlib.util.module_from_spec(model_spec)
@@ -71,34 +91,20 @@ g, p = analyse.rate_map(forward, tem, environments)
 g_cat = np.hstack(g[0])  # NOTE: index 0 because currently there's only 1 env. TODO: what if we want to increase the number of environments on which TEM is pretrained?
 p_cat = np.hstack(p[0])
 # ======== MAKING IT RL ============
-edge_length = 5  # TODO: is there a param in TEM that determines the edge length?
+edge_length = argsdict["edge_length"]  # TODO: is there a param in TEM that determines the edge length?
 num_objects = params['n_x']
-num_neurons = 128
-num_envs = 10
-num_episodes_per_env = 1000
-lr = 0.0001
-n_rollout = 20
+num_neurons = argsdict["num_neurons"]
+num_envs = argsdict["num_envs"]
+num_episodes_per_env = argsdict["num_episodes_per_env"]
+lr = argsdict["lr"]
+n_rollout = argsdict["n_rollout"]
+window_size = argsdict["window_size"]
+agent_type = argsdict["agent_type"]
 
+torch.autograd.set_detect_anomaly(True)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 rl_env = Navigation(edge_length, num_objects)
-
-downstream_mlp_agent = AC_MLP(
-    input_size=len(p_cat),
-    hidden_size=[num_neurons, num_neurons],
-    action_size=5
-).to(device)
-downstream_rnn_agent = AC_RNN(
-    input_size=len(p_cat),
-    hidden_size=[num_neurons, num_neurons],
-    batch_size=1,
-    num_LSTM_layers=1,
-    action_size=5
-).to(device)
-
-torch.autograd.set_detect_anomaly(True)
-# rewards = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-
 
 def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
@@ -124,6 +130,23 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     return rewards
 
 
-rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+if agent_type == 'mlp':
+    downstream_mlp_agent = AC_MLP(
+        input_size=len(p_cat),
+        hidden_size=[num_neurons, num_neurons],
+        action_size=5
+    ).to(device)
+    rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+    plot_results(num_envs, num_episodes_per_env, rewards, 'tem_mlp_readout_agent')
 
-plot_results(num_envs, num_episodes_per_env, rewards, 'mlp_readout_agent')
+elif agent_type == 'rnn':
+    downstream_rnn_agent = AC_RNN(
+        input_size=len(p_cat),
+        hidden_size=[num_neurons, num_neurons],
+        batch_size=1,
+        num_LSTM_layers=1,
+        action_size=5
+    ).to(device)
+    rewards = test_tem_rl(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+    plot_results(num_envs, num_episodes_per_env, rewards, 'tem_rnn_readout_agent')
+
