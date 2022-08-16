@@ -90,68 +90,68 @@ def plot_results(num_envs, num_episodes_per_env, rewards, window_size, title):
     plt.title(title)
     plt.savefig(f'{title}.svg', format='svg')
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run neural networks on tem-rl")
+    parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
+    parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
+    parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
+    parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
+    parser.add_argument("--num_objects",type=int,default=45,help="Number of object that could be associated with different locations of the environment")
+    parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
+    parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
+    parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
+    parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
+    args = parser.parse_args()
+    argsdict = args.__dict__
 
-parser = argparse.ArgumentParser(description="Run neural networks on tem-rl")
-parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
-parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
-parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
-parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
-parser.add_argument("--num_objects",type=int,default=45,help="Number of object that could be associated with different locations of the environment")
-parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
-parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
-parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
-parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
-args = parser.parse_args()
-argsdict = args.__dict__
+    num_envs = argsdict['num_envs']
+    num_episodes_per_env = argsdict['num_episodes_per_env']
+    lr = argsdict['lr']
+    edge_length = argsdict['edge_length']
+    num_objects = argsdict['num_objects']
+    num_neurons = argsdict['num_neurons']
+    n_rollout = argsdict["n_rollout"]
+    window_size = argsdict["window_size"]
+    agent_type = argsdict["agent_type"]
 
-num_envs = argsdict['num_envs']
-num_episodes_per_env = argsdict['num_episodes_per_env']
-lr = argsdict['lr']
-edge_length = argsdict['edge_length']
-num_objects = argsdict['num_objects']
-num_neurons = argsdict['num_neurons']
-n_rollout = argsdict["n_rollout"]
-window_size = argsdict["window_size"]
-agent_type = argsdict["agent_type"]
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+    env = Navigation(edge_length, num_objects)
+    # baseline_agent = actor_critic_agent(
+    #     input_dimensions=num_objects,
+    #     action_dimensions=5,
+    #     batch_size=1,
+    #     hidden_types=['linear', 'linear'],
+    #     hidden_dimensions=[num_neurons, num_neurons]
+    # ).to(device)
+    # rnn_agent = actor_critic_agent(
+    #     input_dimensions=num_objects,
+    #     action_dimensions=5,
+    #     batch_size=1,
+    #     hidden_types=['lstm', 'linear'],
+    #     hidden_dimensions=[num_neurons, num_neurons]
+    # ).to(device)
 
-env = Navigation(edge_length, num_objects)
-# baseline_agent = actor_critic_agent(
-#     input_dimensions=num_objects,
-#     action_dimensions=5,
-#     batch_size=1,
-#     hidden_types=['linear', 'linear'],
-#     hidden_dimensions=[num_neurons, num_neurons]
-# ).to(device)
-# rnn_agent = actor_critic_agent(
-#     input_dimensions=num_objects,
-#     action_dimensions=5,
-#     batch_size=1,
-#     hidden_types=['lstm', 'linear'],
-#     hidden_dimensions=[num_neurons, num_neurons]
-# ).to(device)
+    torch.autograd.set_detect_anomaly(True)
 
-torch.autograd.set_detect_anomaly(True)
-
-if agent_type == 'mlp':
-    baseline_agent = AC_MLP(
-        input_size=num_objects,
-        hidden_size=[num_neurons, num_neurons],  # linear, linear
-        action_size=5
-    ).to(device)
-    rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'mlp_agent')
-elif agent_type == 'rnn':
-    rnn_agent = AC_RNN(
-        input_size=num_objects,
-        hidden_size=[num_neurons,num_neurons],  # LSTM, linear
-        batch_size=1,
-        num_LSTM_layers=1,
-        action_size=5
-    ).to(device)
-    rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'rnn_agent')
+    if agent_type == 'mlp':
+        baseline_agent = AC_MLP(
+            input_size=num_objects,
+            hidden_size=[num_neurons, num_neurons],  # linear, linear
+            action_size=5
+        ).to(device)
+        rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+        plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'mlp_agent')
+    elif agent_type == 'rnn':
+        rnn_agent = AC_RNN(
+            input_size=num_objects,
+            hidden_size=[num_neurons,num_neurons],  # LSTM, linear
+            batch_size=1,
+            num_LSTM_layers=1,
+            action_size=5
+        ).to(device)
+        rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+        plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'rnn_agent')
 
 
 

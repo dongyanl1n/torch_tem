@@ -14,7 +14,7 @@ import sys
 sys.path.append("./tem_rl")
 from tem_rl.rl_world import Navigation
 from tem_rl.rl_model import *
-from tem_rl.rl_run import train_neural_net, plot_results
+from tem_rl.rl_run import bin_rewards, train_neural_net, plot_results
 import argparse
 
 # Set random seeds for reproducibility
