@@ -62,6 +62,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
         for i_episode in tqdm(range(num_episodes_per_env)):
             done = False
             env.trial_reset()
+            breakpoint()
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:

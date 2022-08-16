@@ -74,7 +74,7 @@ include_stay_still = True
 g, p = analyse.rate_map(forward, tem, environments)
 # g: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_g) (for 25 locations). Each element is the firing rate of that grid cell (in that stream) at that location in that env.
 # p: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_p). Each element is the firing rate of that place cell (in that stream) at that location in that env.
-breakpoint()
+
 g_cat = np.hstack(g[0])  # NOTE: index 0 because currently there's only 1 env. TODO: what if we want to increase the number of environments on which TEM is pretrained?
 p_cat = np.hstack(p[0])
 # ======== MAKING IT RL ============
