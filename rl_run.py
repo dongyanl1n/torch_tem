@@ -1,6 +1,3 @@
-import random
-import os
-
 import matplotlib
 
 from rl_model import *
@@ -9,7 +6,6 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from datetime import datetime
 import argparse
 matplotlib.use('Agg')
 

@@ -1,20 +1,12 @@
 # Standard library imports
-import os
-import numpy as np
-import torch
 import glob
-import matplotlib.pyplot as plt
 import importlib.util
 # Own module imports. Note how model module is not imported, since we'll used the model from the training run
 import world
 import analyse
-import plot
-import sys
-sys.path.append("./tem_rl")
-from tem_rl.rl_world import Navigation
-from tem_rl.rl_model import *
-from tem_rl.rl_run import bin_rewards, train_neural_net, plot_results
-import argparse
+from rl_world import Navigation
+from rl_model import *
+from rl_run import train_neural_net, plot_results
 
 # Set random seeds for reproducibility
 np.random.seed(0)
