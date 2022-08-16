@@ -7,6 +7,7 @@ import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import argparse
+import os
 matplotlib.use('Agg')
 
 
@@ -72,7 +73,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     return rewards
 
 
-def plot_results(num_envs, num_episodes_per_env, rewards, window_size, title):
+def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title):
 
     plt.figure()
     plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=window_size))
@@ -80,7 +81,7 @@ def plot_results(num_envs, num_episodes_per_env, rewards, window_size, title):
                ymin=min(bin_rewards(np.array(rewards), window_size=window_size))-5,
                ymax=max(bin_rewards(np.array(rewards), window_size=window_size))+5, linestyles='dotted')
     plt.title(title)
-    plt.savefig(f'{title}.svg', format='svg')
+    plt.savefig(os.path.join(save_dir, f'{title}.svg'), format='svg')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run neural networks on tem-rl environment")
@@ -93,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
     parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
     parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
+    parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
     args = parser.parse_args()
     argsdict = args.__dict__
 
@@ -105,6 +107,7 @@ if __name__ == "__main__":
     n_rollout = argsdict["n_rollout"]
     window_size = argsdict["window_size"]
     agent_type = argsdict["agent_type"]
+    save_dir = argsdict["save_dir"]
 
     print(argsdict)
 
@@ -135,7 +138,7 @@ if __name__ == "__main__":
             action_size=5
         ).to(device)
         rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-        plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'mlp_agent')
+        plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
             input_size=num_objects,
@@ -145,7 +148,7 @@ if __name__ == "__main__":
             action_size=5
         ).to(device)
         rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-        plot_results(num_envs, num_episodes_per_env, rewards, window_size, 'rnn_agent')
+        plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
 
 
