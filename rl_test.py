@@ -28,6 +28,7 @@ parser.add_argument("--num_neurons", type=int, default=128, help="Number of unit
 parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
 parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
 parser.add_argument("--agent_type", type=str, default='mlp', help="type of agent to use. Either 'rnn' or 'mlp'.")
+parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -37,6 +38,7 @@ print(argsdict)
 date = argsdict["date"]
 run = argsdict["run"]
 index = argsdict["index"]
+save_dir = argsdict["save_dir"]
 
 # Load the model: use import library to import module from specified path
 model_spec = importlib.util.spec_from_file_location("model", './Summaries/' + date + '/run' + run + '/script/model.py')
@@ -137,7 +139,7 @@ if agent_type == 'mlp':
         action_size=5
     ).to(device)
     rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, 'tem_mlp_readout_agent')
+    plot_results(num_envs, num_episodes_per_env, rewards, save_dir, 'tem_mlp_readout_agent')
 
 elif agent_type == 'rnn':
     downstream_rnn_agent = AC_RNN(
@@ -148,5 +150,5 @@ elif agent_type == 'rnn':
         action_size=5
     ).to(device)
     rewards = test_tem_rl(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, 'tem_rnn_readout_agent')
+    plot_results(num_envs, num_episodes_per_env, rewards, save_dir, 'tem_rnn_readout_agent')
 
