@@ -164,7 +164,7 @@ if __name__ == "__main__":
             hidden_size=[num_neurons, num_neurons],  # linear, linear
             action_size=5
         ).to(device)
-        rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
@@ -174,9 +174,11 @@ if __name__ == "__main__":
             num_LSTM_layers=1,
             action_size=5
         ).to(device)
-        rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
-
-
+    np.save(os.path.join(save_dir, "goal_locations.npy"), goal_locations)
+    np.save(os.path.join(save_dir, "node_visit_counter.npy"), node_visit_counter_list)
+    np.save(os.path.join(save_dir, "steps_taken.npy"), steps_taken_list)
+    np.save(os.path.join(save_dir, "init_locations.npy"), init_locations_list)
 

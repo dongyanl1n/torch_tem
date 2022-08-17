@@ -118,7 +118,7 @@ if agent_type == 'mlp':
         hidden_size=[num_neurons, num_neurons],
         action_size=5
     ).to(device)
-    rewards = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, save_model_freq, 'tem')
+    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, save_model_freq, 'tem')
     plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_mlp_readout_agent')
 
 elif agent_type == 'rnn':
@@ -129,6 +129,10 @@ elif agent_type == 'rnn':
         num_LSTM_layers=1,
         action_size=5
     ).to(device)
-    rewards = train_neural_net(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, 'tem')
+    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, 'tem')
     plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_rnn_readout_agent')
 
+np.save(os.path.join(save_dir, "goal_locations.npy"), goal_locations)
+np.save(os.path.join(save_dir, "node_visit_counter.npy"), node_visit_counter_list)
+np.save(os.path.join(save_dir, "steps_taken.npy"), steps_taken_list)
+np.save(os.path.join(save_dir, "init_locations.npy"), init_locations_list)
