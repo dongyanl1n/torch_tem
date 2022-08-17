@@ -127,7 +127,7 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
                 agent.reinit_hid()
             while not done:
                 breakpoint()
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(p_cat, np.concatenate(list(env.observation.values())))), dim=0), dim=1).float()
+                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((p_cat, np.concatenate(list(env.observation.values()))))), dim=0), dim=1).float()
                 assert agent.input_size == len(input_to_model), "Agent's input_size should match input dimension!"
                 pol, val = agent.forward(input_to_model)
                 act, p, v = select_action(agent, pol, val)
