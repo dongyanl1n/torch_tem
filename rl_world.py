@@ -47,6 +47,7 @@ class Navigation(object):
         self.observation = None
         self.location_to_object = None
         self.shortest_distance = None
+        self.node_visit_counter = None
         self.seed()
 
     def seed(self, seed=None):
@@ -55,14 +56,16 @@ class Navigation(object):
 
     def env_reset(self):
         # reset goal location
-        self.goal_location = np.random.randint(25)
+        self.goal_location = np.random.randint(self.num_locations)
         # randomly assign objects to locations
         self.location_to_object = np.eye(self.num_objects)[np.random.randint(self.num_objects, size=self.num_locations)]
         self.goal_object = self.location_to_object[self.goal_location]
+        self.node_visit_counter = np.zeros(self.num_locations)
+
 
     def trial_reset(self):
         # Pick a random location
-        self.init_location = np.random.randint(25)
+        self.init_location = np.random.randint(self.num_locations)
         self.init_object = self.location_to_object[self.init_location]
         self.current_location = self.init_location
         self.current_object = self.init_object
@@ -71,6 +74,7 @@ class Navigation(object):
         self.shortest_distance = abs(
             int(np.where(self.grid == self.goal_location)[0] - np.where(self.grid == self.init_location)[0])) + abs(
             int(np.where(self.grid == self.goal_location)[1] - np.where(self.grid == self.init_location)[1]))
+        self.node_visit_counter[self.current_location] += 1
 
     def step(self, action):
         """
@@ -105,6 +109,7 @@ class Navigation(object):
         assert next_location < self.num_locations, "Next location must be between 0 and num_locations"
 
         self.current_location = next_location
+        self.node_visit_counter[self.current_location] += 1
 
         # if current object = goal object: finish trial
         if self.current_location == self.goal_location:
