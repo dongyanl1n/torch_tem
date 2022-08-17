@@ -5,6 +5,7 @@ from rl_world import *
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import gym
 from tqdm import tqdm
 import argparse
 import os
@@ -114,6 +115,7 @@ if __name__ == "__main__":
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
     env = Navigation(edge_length, num_objects)
+    env = gym.wrappers.FlattenObservation(env)
     # baseline_agent = actor_critic_agent(
     #     input_dimensions=num_objects,
     #     action_dimensions=5,
@@ -133,7 +135,7 @@ if __name__ == "__main__":
 
     if agent_type == 'mlp':
         baseline_agent = AC_MLP(
-            input_size=num_objects,
+            input_size=num_objects*2,
             hidden_size=[num_neurons, num_neurons],  # linear, linear
             action_size=5
         ).to(device)
@@ -141,7 +143,7 @@ if __name__ == "__main__":
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
-            input_size=num_objects,
+            input_size=num_objects*2,
             hidden_size=[num_neurons,num_neurons],  # LSTM, linear
             batch_size=1,
             num_LSTM_layers=1,
