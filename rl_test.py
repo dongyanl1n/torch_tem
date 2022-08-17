@@ -11,6 +11,7 @@ from rl_model import *
 from rl_run import plot_results
 from tqdm import tqdm
 import argparse
+import os
 
 # Set random seeds for reproducibility
 np.random.seed(0)
@@ -27,10 +28,10 @@ parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
 parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
 # parser.add_argument("--num_objects",type=int,default=45,help="Number of object that could be associated with different locations of the environment")
 parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
-parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
 parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
 parser.add_argument("--agent_type", type=str, default='mlp', help="type of agent to use. Either 'rnn' or 'mlp'.")
 parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
+parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -101,9 +102,9 @@ num_neurons = argsdict["num_neurons"]
 num_envs = argsdict["num_envs"]
 num_episodes_per_env = argsdict["num_episodes_per_env"]
 lr = argsdict["lr"]
-n_rollout = argsdict["n_rollout"]
 window_size = argsdict["window_size"]
 agent_type = argsdict["agent_type"]
+save_model_freq = argsdict["save_model_freq"]
 
 torch.autograd.set_detect_anomaly(True)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
@@ -113,7 +114,7 @@ rl_env = Navigation(edge_length, num_objects)
 
 # ======= THIS IS WHERE YOU TRY DIFFERENT INPUTS  =========
 
-def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
+def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
@@ -134,6 +135,15 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             # print(f"This episode has {len(agent.rewards)} steps")
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
             p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            if i_block*num_episodes_per_env + i_episode % save_model_freq == 0:
+                torch.save({
+                    'i_env': i_block,
+                    'i_episode': i_episode,
+                    'model_state_dict': agent.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'p_loss': p_loss,
+                    'v_loss': v_loss
+                }, os.path.join(save_dir, f'TEM_{agent_type}_Env{i_block}_Epi{i_episode}.pt'))
 
     return rewards
 
@@ -144,8 +154,8 @@ if agent_type == 'mlp':
         hidden_size=[num_neurons, num_neurons],
         action_size=5
     ).to(device)
-    rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, save_dir, 'tem_mlp_readout_agent')
+    rewards = test_tem_rl(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+    plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_mlp_readout_agent')
 
 elif agent_type == 'rnn':
     downstream_rnn_agent = AC_RNN(
@@ -155,6 +165,6 @@ elif agent_type == 'rnn':
         num_LSTM_layers=1,
         action_size=5
     ).to(device)
-    rewards = test_tem_rl(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
-    plot_results(num_envs, num_episodes_per_env, rewards, save_dir, 'tem_rnn_readout_agent')
+    rewards = test_tem_rl(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+    plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_rnn_readout_agent')
 

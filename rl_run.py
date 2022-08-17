@@ -46,7 +46,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
 
@@ -67,10 +67,15 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             # print(f"This episode has {len(agent.rewards)} steps")
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
             p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-            # if len(agent.rewards) <= n_rollout:
-            #     p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-            # else:
-            #     p_losses, v_losses = finish_trial_truncated_BPTT(agent, 0.99, optimizer, n_rollout)
+            if i_block*num_episodes_per_env + i_episode % save_model_freq == 0:
+                torch.save({
+                    'i_env': i_block,
+                    'i_episode': i_episode,
+                    'model_state_dict': agent.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'p_loss': p_loss,
+                    'v_loss': v_loss
+                }, os.path.join(save_dir, f'{agent_type}_Env{i_block}_Epi{i_episode}.pt'))
 
     return rewards
 
@@ -93,10 +98,10 @@ if __name__ == "__main__":
     parser.add_argument("--edge_length",type=int,default=5,help="Length of edge for the environment")
     parser.add_argument("--num_objects",type=int,default=45,help="Number of object that could be associated with different locations of the environment")
     parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
-    parser.add_argument("--n_rollout", type=int, default=20, help="Number of timestep to unroll when performing truncated BPTT")
     parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
     parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
     parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
+    parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
     args = parser.parse_args()
     argsdict = args.__dict__
 
@@ -106,10 +111,10 @@ if __name__ == "__main__":
     edge_length = argsdict['edge_length']
     num_objects = argsdict['num_objects']
     num_neurons = argsdict['num_neurons']
-    n_rollout = argsdict["n_rollout"]
     window_size = argsdict["window_size"]
     agent_type = argsdict["agent_type"]
     save_dir = argsdict["save_dir"]
+    save_model_freq = argsdict["save_model_freq"]
 
     print(argsdict)
 
@@ -140,7 +145,7 @@ if __name__ == "__main__":
             hidden_size=[num_neurons, num_neurons],  # linear, linear
             action_size=5
         ).to(device)
-        rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+        rewards = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
@@ -150,7 +155,7 @@ if __name__ == "__main__":
             num_LSTM_layers=1,
             action_size=5
         ).to(device)
-        rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, n_rollout)
+        rewards = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
 
