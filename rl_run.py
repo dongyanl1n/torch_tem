@@ -46,25 +46,38 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq):
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, mode):
+    assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
+    node_visit_counter_list = []
+    goal_locations = []
+    init_locations_list = []
+    steps_taken_list = []
 
     for i_block in tqdm(range(num_envs)):
         env.env_reset()
         print(f'Env {i_block}, Goal location {env.goal_location}')  # TODO: write this into logger file
+        goal_locations.append(env.goal_location)
+        init_locations = []
+        steps_taken = []
         for i_episode in tqdm(range(num_episodes_per_env)):
             done = False
             env.trial_reset()
+            init_locations.append(env.init_location)
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
-                input_to_model = np.concatenate(list(env.observation.values()))
-                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(input_to_model), dim=0), dim=1).float())  # TODO: differentiate between inputs for AC_MLP, AC_RNN, and actor_critic_agent
+                if mode == 'tem':
+                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((p_cat, np.concatenate(list(env.observation.values()))))), dim=0), dim=1).float()
+                elif mode == 'baseline':
+                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(env.observation.values()))), dim=0), dim=1).float()
+                pol, val = agent.forward(input_to_model)
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
             # print(f"This episode has {len(agent.rewards)} steps")
+            steps_taken.append(len(agent.rewards))
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
             p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
             if i_block*num_episodes_per_env + i_episode % save_model_freq == 0:
@@ -75,9 +88,15 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_
                     'optimizer_state_dict': optimizer.state_dict(),
                     'p_loss': p_loss,
                     'v_loss': v_loss
-                }, os.path.join(save_dir, f'{agent_type}_Env{i_block}_Epi{i_episode}.pt'))
-
-    return rewards
+                }, os.path.join(save_dir, f'{mode}_{agent_type}_Env{i_block}_Epi{i_episode}.pt'))
+        node_visit_counter_list.append(env.node_visit_counter)
+        init_locations_list.append(np.array(init_locations))
+        steps_taken_list.append(np.array(steps_taken))
+    goal_locations = np.array(goal_locations)
+    node_visit_counter_list = np.array(node_visit_counter_list)
+    steps_taken_list = np.array(steps_taken_list)
+    init_locations_list = np.array(init_locations_list)
+    return rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list
 
 
 def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title):
