@@ -2,6 +2,8 @@
 import glob
 import importlib.util
 # Own module imports. Note how model module is not imported, since we'll used the model from the training run
+import numpy as np
+
 import world
 import analyse
 from rl_world import Navigation
@@ -90,8 +92,8 @@ g, p = analyse.rate_map(forward, tem, environments)
 # g: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_g) (for 25 locations). Each element is the firing rate of that grid cell (in that stream) at that location in that env.
 # p: list of 1 lists (for 1 env) of 5 arrays (for 5 steams) of shape (25, n_p). Each element is the firing rate of that place cell (in that stream) at that location in that env.
 
-g_cat = np.hstack(g[0])  # NOTE: index 0 because currently there's only 1 env. TODO: what if we want to increase the number of environments on which TEM is pretrained?
-p_cat = np.hstack(p[0])
+g_cat = np.hstack(g[0]).flatten()  # NOTE: index 0 because currently there's only 1 env. TODO: what if we want to increase the number of environments on which TEM is pretrained?
+p_cat = np.hstack(p[0]).flatten()
 # ======== MAKING IT RL ============
 edge_length = argsdict["edge_length"]  # TODO: is there a param in TEM that determines the edge length?
 num_objects = params['n_x']
@@ -108,6 +110,8 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 rl_env = Navigation(edge_length, num_objects)
 
+# ======= THIS IS WHERE YOU TRY DIFFERENT INPUTS  =========
+
 def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
@@ -121,7 +125,9 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
-                pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(p_cat), dim=0), dim=1).float())  # TODO: YOU CAN'T JUST INPUT P_CAT FFS
+                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(p_cat, env.observation)), dim=0), dim=1).float()
+                assert agent.input_size == len(input_to_model), "Agent's input_size should match input dimension!"
+                pol, val = agent.forward(input_to_model)
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
                 agent.rewards.append(reward)
@@ -134,7 +140,7 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
 
 if agent_type == 'mlp':
     downstream_mlp_agent = AC_MLP(
-        input_size=len(p_cat),
+        input_size=p_cat.size+num_objects,
         hidden_size=[num_neurons, num_neurons],
         action_size=5
     ).to(device)
@@ -143,7 +149,7 @@ if agent_type == 'mlp':
 
 elif agent_type == 'rnn':
     downstream_rnn_agent = AC_RNN(
-        input_size=len(p_cat),
+        input_size=p_cat.size+num_objects,
         hidden_size=[num_neurons, num_neurons],
         batch_size=1,
         num_LSTM_layers=1,
