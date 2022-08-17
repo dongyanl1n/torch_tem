@@ -59,6 +59,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
+                breakpoint()
                 pol, val = agent.forward(torch.unsqueeze(torch.unsqueeze(torch.as_tensor(env.observation), dim=0), dim=1).float())  # TODO: differentiate between inputs for AC_MLP, AC_RNN, and actor_critic_agent
                 act, p, v = select_action(agent, pol, val)
                 new_obs, reward, done, info = env.step(act)
