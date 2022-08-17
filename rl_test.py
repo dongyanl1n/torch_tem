@@ -19,7 +19,7 @@ torch.manual_seed(0)
 parser = argparse.ArgumentParser(description="Run neural networks on tem-rl environment")
 parser.add_argument("--date",type=str,default='2022-07-31',help='Date to load model')
 parser.add_argument("--run",type=str,default='0',help="Run to load model")
-parser.add_argument("--index",type=float,default=1000,help="Model index (i.e. how many pretraining episodes in) to load model")
+parser.add_argument("--index",type=str,default="1000",help="Model index (i.e. how many pretraining episodes in) to load model")
 
 parser.add_argument("--num_envs",type=int,default=10,help='Number of environments with different object-location pairings')
 parser.add_argument("--num_episodes_per_env",type=int,default=10000,help="Number of episodes to train agent on each environment")
