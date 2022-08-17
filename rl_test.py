@@ -109,7 +109,7 @@ torch.autograd.set_detect_anomaly(True)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 rl_env = Navigation(edge_length, num_objects)
-rl_env = gym.wrappers.FlattenObservation(rl_env)
+# rl_env = gym.wrappers.FlattenObservation(rl_env)
 
 # ======= THIS IS WHERE YOU TRY DIFFERENT INPUTS  =========
 
@@ -126,7 +126,8 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
             if not isinstance(agent, AC_MLP):
                 agent.reinit_hid()
             while not done:
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(p_cat, env.observation)), dim=0), dim=1).float()
+                breakpoint()
+                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(p_cat, np.concatenate(list(env.observation.values())))), dim=0), dim=1).float()
                 assert agent.input_size == len(input_to_model), "Agent's input_size should match input dimension!"
                 pol, val = agent.forward(input_to_model)
                 act, p, v = select_action(agent, pol, val)
