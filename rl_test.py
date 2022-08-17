@@ -3,7 +3,7 @@ import glob
 import importlib.util
 # Own module imports. Note how model module is not imported, since we'll used the model from the training run
 import numpy as np
-
+import gym
 import world
 import analyse
 from rl_world import Navigation
@@ -109,6 +109,7 @@ torch.autograd.set_detect_anomaly(True)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
 rl_env = Navigation(edge_length, num_objects)
+rl_env = gym.wrappers.FlattenObservation(rl_env)
 
 # ======= THIS IS WHERE YOU TRY DIFFERENT INPUTS  =========
 
@@ -140,7 +141,7 @@ def test_tem_rl(env, agent, num_envs, num_episodes_per_env, lr, n_rollout):
 
 if agent_type == 'mlp':
     downstream_mlp_agent = AC_MLP(
-        input_size=p_cat.size+num_objects,
+        input_size=p_cat.size+num_objects*2,
         hidden_size=[num_neurons, num_neurons],
         action_size=5
     ).to(device)
@@ -149,7 +150,7 @@ if agent_type == 'mlp':
 
 elif agent_type == 'rnn':
     downstream_rnn_agent = AC_RNN(
-        input_size=p_cat.size+num_objects,
+        input_size=p_cat.size+num_objects*2,
         hidden_size=[num_neurons, num_neurons],
         batch_size=1,
         num_LSTM_layers=1,
