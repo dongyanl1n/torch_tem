@@ -35,7 +35,8 @@ class Navigation(object):
         self.done = False
         self.action_space = spaces.Discrete(5)
         self.observation_space = spaces.Dict(
-            {'current_object': spaces.Discrete(self.num_objects), 'goal_object': spaces.Discrete(self.num_objects)})
+            {'current_object': spaces.MultiBinary(self.num_objects),
+             'goal_object': spaces.MultiBinary(self.num_objects)})
         self.grid = np.arange(self.num_locations).reshape((edge_length, edge_length))
         self.init_location = None
         self.goal_location = None
@@ -45,6 +46,7 @@ class Navigation(object):
         self.current_object = None
         self.observation = None
         self.location_to_object = None
+        self.shortest_distance = None
         self.seed()
 
     def seed(self, seed=None):
@@ -64,7 +66,11 @@ class Navigation(object):
         self.init_object = self.location_to_object[self.init_location]
         self.current_location = self.init_location
         self.current_object = self.init_object
-        self.observation = self.location_to_object[self.current_location]
+        self.observation = {'current_object': self.current_object,
+                            'goal_object': self.goal_object}  # integers. Need to be translated to one-hot.
+        self.shortest_distance = abs(
+            int(np.where(self.grid == self.goal_location)[0] - np.where(self.grid == self.init_location)[0])) + abs(
+            int(np.where(self.grid == self.goal_location)[1] - np.where(self.grid == self.init_location)[1]))
 
     def step(self, action):
         """
@@ -96,19 +102,20 @@ class Navigation(object):
         elif action == 0:  # stay still
             next_location = self.current_location
 
-        assert next_location < self.num_locations, "Next location must be between 0 and 24 inclusive"
+        assert next_location < self.num_locations, "Next location must be between 0 and num_locations"
 
         self.current_location = next_location
 
         # if current object = goal object: finish trial
         if self.current_location == self.goal_location:
             self.done = True
-            self.reward = 100
+            self.reward = 1
         else:
             self.done = False
-            self.reward = -1
+            self.reward = -0.1
 
-        self.observation = self.location_to_object[self.current_location]
+        self.observation = {'current_object': self.location_to_object[self.current_location],
+                            'goal_object': self.goal_object}
 
         return self.observation, self.reward, self.done, {}
 
