@@ -116,7 +116,7 @@ if __name__ == "__main__":
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
     env = Navigation(edge_length, num_objects)
-    env = gym.wrappers.FlattenObservation(env)
+    # env = gym.wrappers.FlattenObservation(env)
     # baseline_agent = actor_critic_agent(
     #     input_dimensions=num_objects,
     #     action_dimensions=5,
