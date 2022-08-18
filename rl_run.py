@@ -47,7 +47,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode, save_dir):
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode, save_dir, agent_type):
     assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
@@ -168,7 +168,7 @@ if __name__ == "__main__":
             action_size=5
         ).to(device)
         add_input = None
-        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline', save_dir)
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
@@ -179,7 +179,7 @@ if __name__ == "__main__":
             action_size=5
         ).to(device)
         add_input = None
-        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline', save_dir)
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
     np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), goal_locations)
