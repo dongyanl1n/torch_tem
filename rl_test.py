@@ -119,7 +119,7 @@ if agent_type == 'mlp':
         action_size=5
     ).to(device)
     add_input = p_cat
-    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'tem')
+    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_mlp_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'tem', save_dir)
     plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_mlp_readout_agent')
 
 elif agent_type == 'rnn':
@@ -131,7 +131,7 @@ elif agent_type == 'rnn':
         action_size=5
     ).to(device)
     add_input = p_cat
-    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'tem')
+    rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'tem', save_dir)
     plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_rnn_readout_agent')
 
 np.save(os.path.join(save_dir, f"tem_{agent_type}_goal_locations.npy"), goal_locations)
