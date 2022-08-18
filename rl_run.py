@@ -9,6 +9,7 @@ import gym
 from tqdm import tqdm
 import argparse
 import os
+import datetime
 matplotlib.use('Agg')
 
 
@@ -99,15 +100,15 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_
     return rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list
 
 
-def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title):
-
+def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title, mode):
+    assert mode in ['tem', 'baseline']
     plt.figure()
     plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=window_size))
     plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
                ymin=min(bin_rewards(np.array(rewards), window_size=window_size))-5,
                ymax=max(bin_rewards(np.array(rewards), window_size=window_size))+5, linestyles='dotted')
     plt.title(title)
-    plt.savefig(os.path.join(save_dir, f'{title}.svg'), format='svg')
+    plt.savefig(os.path.join(save_dir, f'{title}_rewards.svg'), format='svg')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run neural networks on tem-rl environment")
@@ -177,8 +178,8 @@ if __name__ == "__main__":
         rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
-    np.save(os.path.join(save_dir, "goal_locations.npy"), goal_locations)
-    np.save(os.path.join(save_dir, "node_visit_counter.npy"), node_visit_counter_list)
-    np.save(os.path.join(save_dir, "steps_taken.npy"), steps_taken_list)
-    np.save(os.path.join(save_dir, "init_locations.npy"), init_locations_list)
+    np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), goal_locations)
+    np.save(os.path.join(save_dir, f"baseline_{agent_type}_node_visit_counter.npy"), node_visit_counter_list)
+    np.save(os.path.join(save_dir, f"baseline_{agent_type}_steps_taken.npy"), steps_taken_list)
+    np.save(os.path.join(save_dir, f"baseline_{agent_type}_init_locations.npy"), init_locations_list)
 
