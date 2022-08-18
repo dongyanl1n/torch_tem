@@ -8,7 +8,7 @@ import world
 import analyse
 from rl_world import Navigation
 from rl_model import *
-from rl_run import train_neural_net, plot_results, make_directories
+from rl_run import train_neural_net, plot_results
 from tqdm import tqdm
 import argparse
 import os
