@@ -102,8 +102,8 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_
     return rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list
 
 
-def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title, mode):
-    assert mode in ['tem', 'baseline']
+def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title):
+
     plt.figure()
     plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=window_size))
     plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
