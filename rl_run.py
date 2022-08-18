@@ -47,7 +47,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, mode):
+def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode):
     assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     rewards = np.zeros(num_envs*num_episodes_per_env, dtype=np.float16)
@@ -70,8 +70,10 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_
                 agent.reinit_hid()
             while not done:
                 if mode == 'tem':
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((p_cat, np.concatenate(list(env.observation.values()))))), dim=0), dim=1).float()
+                    assert add_input is not None
+                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(env.observation.values()))))), dim=0), dim=1).float()
                 elif mode == 'baseline':
+                    assert add_input is None
                     input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(env.observation.values()))), dim=0), dim=1).float()
                 pol, val = agent.forward(input_to_model)
                 act, p, v = select_action(agent, pol, val)
@@ -165,7 +167,8 @@ if __name__ == "__main__":
             hidden_size=[num_neurons, num_neurons],  # linear, linear
             action_size=5
         ).to(device)
-        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+        add_input = None
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, baseline_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline')
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'mlp_agent')
     elif agent_type == 'rnn':
         rnn_agent = AC_RNN(
@@ -175,7 +178,8 @@ if __name__ == "__main__":
             num_LSTM_layers=1,
             action_size=5
         ).to(device)
-        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq)
+        add_input = None
+        rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(env, rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'baseline')
         plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'rnn_agent')
 
     np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), goal_locations)
