@@ -83,7 +83,7 @@ def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_
             steps_taken.append(len(agent.rewards))
             rewards[i_block*num_episodes_per_env + i_episode] = sum(agent.rewards)
             p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-            if i_block*num_episodes_per_env + i_episode % save_model_freq == 0:
+            if (i_block*num_episodes_per_env + i_episode) % save_model_freq == 0:
                 torch.save({
                     'i_env': i_block,
                     'i_episode': i_episode,
