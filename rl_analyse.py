@@ -44,7 +44,7 @@ plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_pe
 plt.legend()
 plt.title(agent_type)
 plt.show()
-plt.savefig(data_dir+"steps_taken.svg", format='svg')
+plt.savefig(data_dir+agent_type+"steps_taken.svg", format='svg')
 
 # occupancy figure
 num_rows = 2
@@ -56,6 +56,6 @@ for i_row in range(num_rows):
         # axs[i_row, i_col].set_title(f'Env {i_row*num_cols+i_col}, goal location {goal_locations[i_row*num_cols+i_col, 0]}')
 fig.suptitle('Agent occupancy', fontsize=16)
 plt.show()
-plt.savefig(data_dir+"occupancy.svg", format='svg')
+plt.savefig(data_dir+agent_type+"occupancy.svg", format='svg')
 
 
