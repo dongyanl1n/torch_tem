@@ -24,8 +24,8 @@ grid = np.arange(num_locations).reshape((edge_length, edge_length))
 # Calculate shortest distance
 goal_locations = np.tile(goal_locations, (num_episodes_per_env, 1)).T
 shortest_distance = []
-
-for goal_location, init_location in zip(goal_locations.flatten(), init_locations.flatten(())):
+breakpoint()
+for goal_location, init_location in zip(goal_locations.flatten().tolist(), init_locations.flatten().tolist()):
     shortest_distance.append(abs(
         int(np.where(grid == goal_location)[0] - np.where(grid == init_location)[0])) + abs(
         int(np.where(grid == goal_location)[1] - np.where(grid == init_location)[1])))
