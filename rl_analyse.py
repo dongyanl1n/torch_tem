@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from rl_run import bin_rewards
 
 # Assume we have:
 # goal_locations.npy: (num_envs,)
@@ -20,6 +21,7 @@ num_episodes_per_env = init_locations.shape[1]
 num_locations = node_visit_counter.shape[1]
 edge_length = int(np.sqrt(num_locations))
 grid = np.arange(num_locations).reshape((edge_length, edge_length))
+window_size = 1000
 
 # Calculate shortest distance
 goal_locations = np.tile(goal_locations, (num_episodes_per_env, 1)).T
@@ -34,11 +36,11 @@ shortest_distance = np.reshape(np.array(shortest_distance), (num_envs, num_episo
 
 # Steps taken vs shortest distance figure
 plt.figure()
-plt.plot(np.arange(num_envs*num_episodes_per_env), shortest_distance.flatten(), label='shortest distance')
-plt.plot(np.arange(num_envs*num_episodes_per_env), steps_taken.flatten(), label='# steps')
+plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(shortest_distance.flatten(), window_size), label='shortest distance')
+plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(steps_taken.flatten(), window_size), label='# steps')
 plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-           ymin=min(shortest_distance.flatten())-5,
-           ymax=max(steps_taken.flatten())+5, linestyles='dotted')
+           ymin=min(bin_rewards(shortest_distance.flatten(), window_size))-5,
+           ymax=max(bin_rewards(steps_taken.flatten(), window_size))+5, linestyles='dotted')
 plt.legend()
 plt.title(agent_type)
 plt.show()
