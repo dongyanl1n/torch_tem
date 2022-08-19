@@ -37,8 +37,8 @@ plt.figure()
 plt.plot(np.arange(num_envs*num_episodes_per_env), shortest_distance.flatten(), label='shortest distance')
 plt.plot(np.arange(num_envs*num_episodes_per_env), steps_taken.flatten(), label='# steps')
 plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-           ymin=min(shortest_distance)-5,
-           ymax=max(steps_taken)+5, linestyles='dotted')
+           ymin=min(shortest_distance.flatten())-5,
+           ymax=max(steps_taken.flatten())+5, linestyles='dotted')
 plt.legend()
 plt.title(agent_type)
 plt.show()
