@@ -134,7 +134,7 @@ elif agent_type == 'rnn':
     rewards, goal_locations, node_visit_counter_list, steps_taken_list, init_locations_list = train_neural_net(rl_env, downstream_rnn_agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, 'tem', save_dir, agent_type)
     plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, 'tem_rnn_readout_agent')
 
-np.save(os.path.join(save_dir, f"tem_{agent_type}_goal_locations.npy"), goal_locations)
-np.save(os.path.join(save_dir, f"tem_{agent_type}_node_visit_counter.npy"), node_visit_counter_list)
-np.save(os.path.join(save_dir, f"tem_{agent_type}_steps_taken.npy"), steps_taken_list)
-np.save(os.path.join(save_dir, f"tem_{agent_type}_init_locations.npy"), init_locations_list)
+np.save(os.path.join(save_dir, f"tem_{agent_type}_{date}_run{run}_{index}_goal_locations.npy"), goal_locations)
+np.save(os.path.join(save_dir, f"tem_{agent_type}_{date}_run{run}_{index}_node_visit_counter.npy"), node_visit_counter_list)
+np.save(os.path.join(save_dir, f"tem_{agent_type}_{date}_run{run}_{index}_steps_taken.npy"), steps_taken_list)
+np.save(os.path.join(save_dir, f"tem_{agent_type}_{date}_run{run}_{index}_init_locations.npy"), init_locations_list)
