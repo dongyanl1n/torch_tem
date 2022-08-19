@@ -51,7 +51,7 @@ fig, axs = plt.subplots(num_rows, num_cols)
 for i_row in range(num_rows):
     for i_col in range(num_cols):
         axs[i_row, i_col] = plt.imshow(node_visit_counter[i_row*num_cols+i_col].reshape(edge_length, edge_length))
-        axs[i_row, i_col].set_title(f'Env {i_row*num_cols+i_col}, goal location {goal_locations[i_row*num_cols+i_col, 0]}')
+        # axs[i_row, i_col].set_title(f'Env {i_row*num_cols+i_col}, goal location {goal_locations[i_row*num_cols+i_col, 0]}')
 fig.suptitle('Agent occupancy', fontsize=16)
 plt.show()
 plt.savefig(data_dir+"occupancy.svg", format='svg')
