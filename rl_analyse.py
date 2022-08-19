@@ -24,7 +24,7 @@ grid = np.arange(num_locations).reshape((edge_length, edge_length))
 # Calculate shortest distance
 goal_locations = np.tile(goal_locations, (num_episodes_per_env, 1)).T
 shortest_distance = []
-breakpoint()
+
 for goal_location, init_location in zip(goal_locations.flatten().tolist(), init_locations.flatten().tolist()):
     shortest_distance.append(abs(
         int(np.where(grid == goal_location)[0] - np.where(grid == init_location)[0])) + abs(
@@ -36,7 +36,9 @@ shortest_distance = np.reshape(np.array(shortest_distance), (num_envs, num_episo
 plt.figure()
 plt.plot(np.arange(num_envs*num_episodes_per_env), shortest_distance.flatten(), label='shortest distance')
 plt.plot(np.arange(num_envs*num_episodes_per_env), steps_taken.flatten(), label='# steps')
-plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env), linestyles='dotted')
+plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
+           ymin=min(shortest_distance)-5,
+           ymax=max(steps_taken)+5, linestyles='dotted')
 plt.legend()
 plt.title(agent_type)
 plt.show()
