@@ -11,9 +11,9 @@ data_dir = 'experiments/2022-08-17/'
 agent_type = 'baseline_rnn'
 
 goal_locations = np.load(data_dir+agent_type+'_goal_locations.npy')
-init_locations = np.load(agent_type+'_init_locations.npy')
-node_visit_counter = np.load(agent_type+'_node_visit_counter.npy')
-steps_taken = np.load(agent_type+'_steps_taken.npy')
+init_locations = np.load(data_dir+agent_type+'_init_locations.npy')
+node_visit_counter = np.load(data_dir+agent_type+'_node_visit_counter.npy')
+steps_taken = np.load(data_dir+agent_type+'_steps_taken.npy')
 
 num_envs = goal_locations.shape[0]
 num_episodes_per_env = init_locations.shape[1]
