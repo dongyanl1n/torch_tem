@@ -18,7 +18,7 @@ steps_taken = np.load(data_dir+agent_type+'_steps_taken.npy')
 num_envs = goal_locations.shape[0]
 num_episodes_per_env = init_locations.shape[1]
 num_locations = node_visit_counter.shape[1]
-edge_length = np.sqrt(num_locations)
+edge_length = int(np.sqrt(num_locations))
 grid = np.arange(num_locations).reshape((edge_length, edge_length))
 
 # Calculate shortest distance
