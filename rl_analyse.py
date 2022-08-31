@@ -42,9 +42,9 @@ plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_pe
            ymin=min(bin_rewards(shortest_distance.flatten(), window_size))-5,
            ymax=max(bin_rewards(steps_taken.flatten(), window_size))+5, linestyles='dotted')
 plt.legend()
-plt.title(agent_type)
+plt.title(agent_name)
 plt.show()
-plt.savefig(data_dir+agent_type+"_steps_taken.svg", format='svg')
+plt.savefig(data_dir+agent_name+"_steps_taken.svg", format='svg')
 
 # occupancy figure
 num_rows = 2
@@ -56,6 +56,6 @@ for i_row in range(num_rows):
         # axs[i_row, i_col].set_title(f'Env {i_row*num_cols+i_col}, goal location {goal_locations[i_row*num_cols+i_col, 0]}')
 fig.suptitle('Agent occupancy', fontsize=16)
 plt.show()
-plt.savefig(data_dir+agent_type+"_occupancy.svg", format='svg')
+plt.savefig(data_dir+agent_name+"_occupancy.svg", format='svg')
 
 
