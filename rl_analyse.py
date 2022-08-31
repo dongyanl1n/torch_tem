@@ -9,7 +9,7 @@ from rl_run import bin_rewards
 # steps_taken.npy: (num_envs, num_episodes_per_env)
 
 data_dir = 'experiments/2022-08-17/'
-agent_name = 'baseline_rnn'  # Or, tem_rnn_2022-07-31_run0_1000'
+agent_name = 'tem_rnn_2022-07-31_run0_30000'  # baseline_rnn, or, tem_rnn_2022-07-31_run0_1000'
 
 goal_locations = np.load(data_dir+agent_name+'_goal_locations.npy')
 init_locations = np.load(data_dir+agent_name+'_init_locations.npy')
