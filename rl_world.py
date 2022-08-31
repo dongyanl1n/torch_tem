@@ -48,11 +48,11 @@ class Navigation(object):
         self.location_to_object = None
         self.shortest_distance = None
         self.node_visit_counter = None
-        self.seed()
+        # self.seed()
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    #def seed(self, seed=None):
+    #    self.np_random, seed = seeding.np_random(seed)
+    #    return [seed]
 
     def env_reset(self):
         # reset goal location
