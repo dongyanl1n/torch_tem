@@ -1,5 +1,6 @@
 import matplotlib
 
+import rl_world
 from rl_model import *
 from rl_world import *
 import numpy as np
@@ -45,6 +46,41 @@ def random_policy(env, num_envs, num_episodes_per_env):
             rewards.append([episode_reward])
 
     return rewards
+
+
+def train_neural_net_on_SimpleNavigation(agent, env, num_episodes, lr, save_model_freq, add_input, mode, save_dir, agent_type):
+    assert mode in ['tem', 'baseline']
+    optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
+    steps_taken = np.zeros(num_episodes, dtype=np.float16)
+    for i_episode in tqdm(range(num_episodes)):
+        done = False
+        observation = env.reset()
+        print(f"Trial {i_episode}, Agent initial location {observation['agent']}, Target location {observation['target']}")
+        if not isinstance(agent, AC_MLP):
+            agent.reinit_hid()
+        while not done: # act, step
+            if mode == 'tem':
+                assert add_input is not None
+                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(observation.values()))))), dim=0), dim=1).float()
+            elif mode == 'baseline':
+                assert add_input is None
+                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
+            pol, val = agent.forward(input_to_model)
+            act, p, v = select_action(agent, pol, val)
+            observation, reward, done, info = env.step(act)
+            agent.rewards.append(reward)
+        # print(f"This episode has {len(agent.rewards)} steps")
+        steps_taken.append(len(agent.rewards))
+        p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+        if i_episode % save_model_freq == 0:
+            torch.save({
+                'i_episode': i_episode,
+                'model_state_dict': agent.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'p_loss': p_loss,
+                'v_loss': v_loss
+            }, os.path.join(save_dir, f'{mode}_{agent_type}_Epi{i_episode}.pt'))
+    return rewards, steps_taken
 
 
 def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode, save_dir, agent_type):
@@ -143,21 +179,7 @@ if __name__ == "__main__":
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
     env = Navigation(edge_length, num_objects)
-    # env = gym.wrappers.FlattenObservation(env)
-    # baseline_agent = actor_critic_agent(
-    #     input_dimensions=num_objects,
-    #     action_dimensions=5,
-    #     batch_size=1,
-    #     hidden_types=['linear', 'linear'],
-    #     hidden_dimensions=[num_neurons, num_neurons]
-    # ).to(device)
-    # rnn_agent = actor_critic_agent(
-    #     input_dimensions=num_objects,
-    #     action_dimensions=5,
-    #     batch_size=1,
-    #     hidden_types=['lstm', 'linear'],
-    #     hidden_dimensions=[num_neurons, num_neurons]
-    # ).to(device)
+    # env = SimpleNavigation(size=3)
 
     torch.autograd.set_detect_anomaly(True)
 
