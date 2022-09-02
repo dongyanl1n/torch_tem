@@ -40,7 +40,7 @@ print(argsdict)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
 
-env = SimpleNavigation(size=3)
+env = SimpleNavigation(size=size)
 
 torch.autograd.set_detect_anomaly(True)
 
