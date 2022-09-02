@@ -51,7 +51,7 @@ def random_policy(env, num_envs, num_episodes_per_env):
 def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_model_freq, add_input, mode, save_dir, agent_type):
     assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
-    steps_taken = np.zeros(num_episodes, dtype=np.float16)
+    steps_taken = []
     for i_episode in tqdm(range(num_episodes)):
         done = False
         observation = env.reset()
