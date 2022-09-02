@@ -72,7 +72,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_mode
         # print(f"This episode has {len(agent.rewards)} steps")
         steps_taken.append(len(agent.rewards))
         p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-        if i_episode % save_model_freq == 0:
+        if (i_episode + 1) % save_model_freq == 0:
             torch.save({
                 'i_episode': i_episode,
                 'model_state_dict': agent.state_dict(),
