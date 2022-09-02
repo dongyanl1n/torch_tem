@@ -51,7 +51,7 @@ if agent_type == 'mlp':
         action_size=4
     ).to(device)
     add_input = None
-    steps_taken = train_neural_net_on_SimpleNavigation(env, baseline_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'mlp_agent_steps_taken')
 elif agent_type == 'rnn':
     rnn_agent = AC_RNN(
@@ -62,6 +62,8 @@ elif agent_type == 'rnn':
         action_size=4
     ).to(device)
     add_input = None
-    steps_taken = train_neural_net_on_SimpleNavigation(env, rnn_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
 
+np.save(os.path.join(save_dir, f"baseline_{agent_type}_init_locations.npy"), init_loc)
+np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), target_loc)

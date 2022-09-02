@@ -52,10 +52,13 @@ def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_mode
     assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     steps_taken = []
+    init_loc = np.zeros((num_episodes, 2), type=np.int8)
+    target_loc = np.zeros((num_episodes, 2), type=np.int8)
     for i_episode in range(num_episodes):
         done = False
         observation = env.reset()
-        print(f"Trial {i_episode}, Agent initial location {observation['agent']}, Target location {observation['target']}")
+        init_loc[i_episode] = observation["agent"]
+        target_loc[i_episode] = observation["target"]
         if not isinstance(agent, AC_MLP):
             agent.reinit_hid()
         while not done: # act, step
@@ -80,7 +83,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_mode
                 'p_loss': p_loss,
                 'v_loss': v_loss
             }, os.path.join(save_dir, f'{mode}_{agent_type}_Epi{i_episode}.pt'))
-    return steps_taken
+    return steps_taken, init_loc, target_loc
 
 
 def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode, save_dir, agent_type):
