@@ -52,7 +52,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_mode
     assert mode in ['tem', 'baseline']
     optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     steps_taken = []
-    for i_episode in tqdm(range(num_episodes)):
+    for i_episode in range(num_episodes):
         done = False
         observation = env.reset()
         print(f"Trial {i_episode}, Agent initial location {observation['agent']}, Target location {observation['target']}")
