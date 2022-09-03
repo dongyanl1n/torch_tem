@@ -7,6 +7,170 @@ from torch.distributions import Categorical
 from collections import namedtuple
 
 
+class AC_Net(nn.Module):
+    """
+    An actor-critic neural network class. Takes sensory inputs and generates a policy and a value estimate.
+    """
+
+    def __init__(self, input_dimensions, action_dimensions, batch_size, hidden_types, hidden_dimensions):
+
+        """
+        AC_Net(input_dimensions, action_dimensions, hidden_types=[], hidden_dimensions=[])
+        Create an actor-critic network class.
+        Required arguments:
+        - input_dimensions (int): the dimensions of the input space
+        - action_dimensions (int): the number of possible actions
+        Optional arguments:
+        - batch_size (int): the size of the batches (default = 4).
+        - hidden_types (list of strings): the type of hidden layers to use, options are 'linear', 'lstm', 'gru'.
+        If list is empty no hidden layers are used (default = []).
+        - hidden_dimensions (list of ints): the dimensions of the hidden layers. Must be a list of
+                                        equal length to hidden_types (default = []).
+        """
+
+        # call the super-class init
+        super(AC_Net, self).__init__()
+
+        # store the input dimensions
+        self.input_d = input_dimensions
+
+        # check input type
+        assert (hidden_types[0] == 'linear' or hidden_types[0] == 'lstm' or hidden_types[0] == 'gru')
+        self.input_type = 'vector'
+        self.hidden_types = hidden_types
+
+        # store the batch size
+        self.batch_size = batch_size
+
+        # check that the correct number of hidden dimensions are specified
+        assert len(hidden_types) is len(hidden_dimensions)
+
+        # check whether we're using hidden layers
+        if not hidden_types:
+            self.layers = [input_dimensions, action_dimensions]
+            # no hidden layers, only input to output, create the actor and critic layers
+            self.output = nn.ModuleList([
+                nn.Linear(input_dimensions, action_dimensions),  # ACTOR
+                nn.Linear(input_dimensions, 1)])  # CRITIC
+        else:
+            # to store a record of the last hidden states
+            self.hx = []
+            self.cx = []
+            # create the hidden layers
+            self.hidden = nn.ModuleList()
+            ## for recording pre-relu linear cell activity
+            self.cell_out = [] ##
+            for i, htype in enumerate(hidden_types):
+                # check if hidden layer type is correct
+                assert htype in ['linear', 'lstm', 'gru']
+                # get the input dimensions
+                # first hidden layer
+                if i is 0:
+                    input_d = input_dimensions
+                    output_d = hidden_dimensions[i]
+                    if htype is 'linear':
+                        self.hidden.append(nn.Linear(input_d, output_d))
+                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d))) ##
+                        self.hx.append(None) ##
+                        self.cx.append(None) ##
+                    elif htype is 'lstm':
+                        self.hidden.append(nn.LSTMCell(input_d, output_d))
+                        self.cell_out.append(None) ##
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                    elif htype is 'gru':
+                        self.hidden.append(nn.GRUCell(input_d, output_d))
+                        self.cell_out.append(None) ##
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.cx.append(None)
+                # second hidden layer onwards
+                else:
+                    input_d = hidden_dimensions[i - 1]
+                    # get the output dimension
+                    output_d = hidden_dimensions[i]
+                    # construct the layer
+                    if htype is 'linear':
+                        self.hidden.append(nn.Linear(input_d, output_d))
+                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d))) ##
+                        self.hx.append(None)
+                        self.cx.append(None)
+                    elif htype is 'lstm':
+                        self.hidden.append(nn.LSTMCell(input_d, output_d))
+                        self.cell_out.append(None) ##
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                    elif htype is 'gru':
+                        self.hidden.append(nn.GRUCell(input_d, output_d))
+                        self.cell_out.append(None) ##
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.cx.append(None)
+        # create the actor and critic layers
+        self.layers = [input_dimensions] + hidden_dimensions + [action_dimensions]
+        self.output = nn.ModuleList([
+            nn.Linear(output_d, action_dimensions),  # actor
+            nn.Linear(output_d, 1)  # critic
+        ])
+        # store the output dimensions
+        self.output_d = output_d
+        # to store a record of actions and rewards
+        self.saved_actions = []
+        self.rewards = []
+
+    def forward(self, x, temperature=1):
+        '''
+        forward(x):
+        Runs a forward pass through the network to get a policy and value.
+        Required arguments:
+          - x (torch.Tensor): sensory input to the network, should be of size batch x input_d
+        '''
+
+        # check the inputs
+        assert x.shape[-1] == self.input_d
+
+        # pass the data through each hidden layer
+        for i, layer in enumerate(self.hidden):
+            # run input through the layer depending on type
+            if isinstance(layer, nn.Linear): ##
+                self.cell_out[i] = layer(x)
+                x = F.relu(self.cell_out[i])
+                lin_activity = x
+            elif isinstance(layer, nn.LSTMCell):
+                x, cx = layer(x, (self.hx[i], self.cx[i]))
+                self.hx[i] = x.clone()
+                self.cx[i] = cx.clone()
+            elif isinstance(layer, nn.GRUCell):
+                x = layer(x, self.hx[i])
+                self.hx[i] = x.clone()
+        # pass to the output layers
+        policy = F.softmax(self.output[0](x), dim=1)
+        value = self.output[1](x)
+
+        if isinstance(self.hidden[-1], nn.Linear):
+            return policy, value, lin_activity
+        else:
+            return policy, value
+
+    def reinit_hid(self):
+        # to store a record of the last hidden states
+        self.cell_out = []
+        self.hx = []
+        self.cx = []
+
+        for i, layer in enumerate(self.hidden):
+            if isinstance(layer, nn.Linear):
+                self.cell_out.append(Variable(torch.zeros(self.batch_size, layer.out_features))) ##
+                self.hx.append(None)##
+                self.cx.append(None)##
+            elif isinstance(layer, nn.LSTMCell):
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.cx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.cell_out.append(None) ##
+            elif isinstance(layer, nn.GRUCell):
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.cx.append(None)
+                self.cell_out.append(None)##
+
+
 class AC_MLP(torch.nn.Module):
     def __init__(self, input_size, hidden_size, action_size):
         super(AC_MLP, self).__init__()

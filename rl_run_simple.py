@@ -84,6 +84,29 @@ elif agent_type == 'rnn':
         rnn_agent.train()
     steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
-
+elif agent_type == 'og_mlp':
+    baseline_agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['linear', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        ).to(device)
+    optimizer = torch.optim.Adam(baseline_agent.parameters(), lr=lr)
+    add_input = None
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'og_mlp_agent_steps_taken')
+elif agent_type == 'og_rnn':
+    rnn_agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['lstm', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        ).to(device)
+    optimizer = torch.optim.Adam(rnn_agent.parameters(), lr=lr)
+    add_input = None
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'og_rnn_agent_steps_taken')
 np.save(os.path.join(save_dir, f"baseline_{agent_type}_init_locations.npy"), init_loc)
 np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), target_loc)
