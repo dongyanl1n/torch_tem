@@ -24,6 +24,7 @@ parser.add_argument("--window_size", type=int, default=1000, help="Size of rolli
 parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
 parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
 parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
+parser.add_argument("--load_existing_agent", type=str, default=None, help="path to existing agent to load")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -35,6 +36,7 @@ window_size = argsdict["window_size"]
 agent_type = argsdict["agent_type"]
 save_dir = argsdict["save_dir"]
 save_model_freq = argsdict["save_model_freq"]
+load_existing_agent = argsdict["load_existing_agent"]
 
 print(argsdict)
 
@@ -50,8 +52,16 @@ if agent_type == 'mlp':
         hidden_size=[num_neurons, num_neurons],  # linear, linear
         action_size=4
     ).to(device)
+    optimizer = torch.optim.Adam(baseline_agent.parameters(), lr=lr)
     add_input = None
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    if load_existing_agent is not None:
+        checkpoint = torch.load(load_existing_agent)
+        baseline_agent.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+        baseline_agent.train()
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'mlp_agent_steps_taken')
 elif agent_type == 'rnn':
     rnn_agent = AC_RNN(
@@ -61,8 +71,16 @@ elif agent_type == 'rnn':
         num_LSTM_layers=1,
         action_size=4
     ).to(device)
+    optimizer = torch.optim.Adam(rnn_agent.parameters(), lr=lr)
     add_input = None
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, num_episodes, lr, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    if load_existing_agent is not None:
+        checkpoint = torch.load(load_existing_agent)
+        rnn_agent.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        loss = checkpoint['loss']
+        rnn_agent.train()
+    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
 
 np.save(os.path.join(save_dir, f"baseline_{agent_type}_init_locations.npy"), init_loc)

@@ -48,9 +48,8 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net_on_SimpleNavigation(env, agent, num_episodes, lr, save_model_freq, add_input, mode, save_dir, agent_type):
+def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type):
     assert mode in ['tem', 'baseline']
-    optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
     steps_taken = []
     init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
