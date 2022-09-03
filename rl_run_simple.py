@@ -58,8 +58,9 @@ if agent_type == 'mlp':
         checkpoint = torch.load(load_existing_agent)
         baseline_agent.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        epoch = checkpoint['epoch']
-        loss = checkpoint['loss']
+        p_loss = checkpoint['p_loss']
+        v_loss = checkpoint['v_loss']
+        i_episode = checkpoint['i_episode']
         baseline_agent.train()
     steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'mlp_agent_steps_taken')
@@ -77,8 +78,9 @@ elif agent_type == 'rnn':
         checkpoint = torch.load(load_existing_agent)
         rnn_agent.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        epoch = checkpoint['epoch']
-        loss = checkpoint['loss']
+        p_loss = checkpoint['p_loss']
+        v_loss = checkpoint['v_loss']
+        i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
         rnn_agent.train()
     steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
