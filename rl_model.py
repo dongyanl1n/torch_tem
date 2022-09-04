@@ -42,6 +42,8 @@ class AC_Net(nn.Module):
         # store the batch size
         self.batch_size = batch_size
 
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+
         # check that the correct number of hidden dimensions are specified
         assert len(hidden_types) is len(hidden_dimensions)
 
@@ -70,18 +72,18 @@ class AC_Net(nn.Module):
                     output_d = hidden_dimensions[i]
                     if htype is 'linear':
                         self.hidden.append(nn.Linear(input_d, output_d))
-                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d))) ##
+                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device)) ##
                         self.hx.append(None) ##
                         self.cx.append(None) ##
                     elif htype is 'lstm':
                         self.hidden.append(nn.LSTMCell(input_d, output_d))
                         self.cell_out.append(None) ##
-                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
-                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
+                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                     elif htype is 'gru':
                         self.hidden.append(nn.GRUCell(input_d, output_d))
                         self.cell_out.append(None) ##
-                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                         self.cx.append(None)
                 # second hidden layer onwards
                 else:
@@ -91,18 +93,18 @@ class AC_Net(nn.Module):
                     # construct the layer
                     if htype is 'linear':
                         self.hidden.append(nn.Linear(input_d, output_d))
-                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d))) ##
+                        self.cell_out.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device)) ##
                         self.hx.append(None)
                         self.cx.append(None)
                     elif htype is 'lstm':
                         self.hidden.append(nn.LSTMCell(input_d, output_d))
                         self.cell_out.append(None) ##
-                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
-                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
+                        self.cx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                     elif htype is 'gru':
                         self.hidden.append(nn.GRUCell(input_d, output_d))
                         self.cell_out.append(None) ##
-                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)))
+                        self.hx.append(Variable(torch.zeros(self.batch_size, output_d)).to(self.device))
                         self.cx.append(None)
         # create the actor and critic layers
         self.layers = [input_dimensions] + hidden_dimensions + [action_dimensions]
@@ -115,6 +117,7 @@ class AC_Net(nn.Module):
         # to store a record of actions and rewards
         self.saved_actions = []
         self.rewards = []
+        self.to(self.device)
 
     def forward(self, x, temperature=1):
         '''
@@ -126,6 +129,8 @@ class AC_Net(nn.Module):
 
         # check the inputs
         assert x.shape[-1] == self.input_d
+
+        x = x.to(self.device)
 
         # pass the data through each hidden layer
         for i, layer in enumerate(self.hidden):
@@ -146,10 +151,7 @@ class AC_Net(nn.Module):
         policy = F.softmax(self.output[0](x), dim=1)
         value = self.output[1](x)
 
-        if isinstance(self.hidden[-1], nn.Linear):
-            return policy, value, lin_activity
-        else:
-            return policy, value
+        return policy, value
 
     def reinit_hid(self):
         # to store a record of the last hidden states
@@ -159,15 +161,15 @@ class AC_Net(nn.Module):
 
         for i, layer in enumerate(self.hidden):
             if isinstance(layer, nn.Linear):
-                self.cell_out.append(Variable(torch.zeros(self.batch_size, layer.out_features))) ##
+                self.cell_out.append(Variable(torch.zeros(self.batch_size, layer.out_features)).to(self.device)) ##
                 self.hx.append(None)##
                 self.cx.append(None)##
             elif isinstance(layer, nn.LSTMCell):
-                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
-                self.cx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
+                self.cx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
                 self.cell_out.append(None) ##
             elif isinstance(layer, nn.GRUCell):
-                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)))
+                self.hx.append(Variable(torch.zeros(self.batch_size, layer.hidden_size)).to(self.device))
                 self.cx.append(None)
                 self.cell_out.append(None)##
 
