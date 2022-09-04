@@ -66,7 +66,10 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                 input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(observation.values()))))), dim=0), dim=1).float()
             elif mode == 'baseline':
                 assert add_input is None
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
+                if agent_type == "og_rnn" or agent_type == "og_mlp":
+                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()[0]
+                else:
+                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
             pol, val = agent.forward(input_to_model)
             act, p, v = select_action(agent, pol, val)
             observation, reward, done, info = env.step(act)
