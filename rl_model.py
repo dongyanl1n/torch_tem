@@ -135,6 +135,7 @@ class AC_Net(nn.Module):
                 x = F.relu(self.cell_out[i])
                 lin_activity = x
             elif isinstance(layer, nn.LSTMCell):
+                breakpoint()
                 x, cx = layer(x, (self.hx[i], self.cx[i]))
                 self.hx[i] = x.clone()
                 self.cx[i] = cx.clone()
