@@ -53,7 +53,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
     steps_taken = []
     init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
-    for i_episode in range(num_episodes):
+    for i_episode in tqdm(range(num_episodes)):
         done = False
         observation = env.reset()
         init_loc[i_episode] = observation["agent"]
