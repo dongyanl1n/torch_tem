@@ -48,9 +48,22 @@ def random_policy(env, num_envs, num_episodes_per_env):
     return rewards
 
 
-def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type):
+def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type, record_activity=False):
     assert mode in ['tem', 'baseline']
     steps_taken = []
+    if record_activity:
+        assert agent_type == "og_rnn" or agent_type == "og_mlp"
+        assert len(agent.hidden_types) == 2  # Two layer MLP for now
+        trial_counter = []
+        location = []
+        action = []
+        if agent_type == "og_mlp":
+            lin_1_activity = []
+            lin_2_activity = []
+        elif agent_type == "og_rnn":
+            hx_activity = []
+            cx_activity = []
+            lin_activity = []
     init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     for i_episode in tqdm(range(num_episodes)):
@@ -72,6 +85,17 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                     input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
             pol, val = agent.forward(input_to_model)
             act, p, v = select_action(agent, pol, val)
+            if record_activity:
+                action.append(act)
+                trial_counter.append(i_episode)
+                location.append(observation["agent"])
+                if agent_type == "og_mlp":
+                    lin_1_activity.append(agent.cell_out[0].clone().detach().cpu().numpy().squeeze())
+                    lin_2_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
+                elif agent_type == "og_rnn":
+                    hx_activity.append(agent.hx[0].clone().detach().cpu().numpy().squeeze())
+                    cx_activity.append(agent.cx[0].clone().detach().cpu().numpy().squeeze())
+                    lin_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
             observation, reward, done, info = env.step(act)
             agent.rewards.append(reward)
         # print(f"This episode has {len(agent.rewards)} steps")
@@ -85,7 +109,28 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                 'p_loss': p_loss,
                 'v_loss': v_loss
             }, os.path.join(save_dir, f'{mode}_{agent_type}_Epi{i_episode}.pt'))
-    return steps_taken, init_loc, target_loc
+    if record_activity:  # zip recorded data
+        if agent_type == "og_mlp":
+            data = {"init_loc": init_loc,
+                    "target_loc": target_loc,
+                    "action": np.array(action),
+                    "trial_counter": np.array(trial_counter),
+                    "location": np.array(location),
+                    "lin_1_activity": np.array(lin_1_activity),
+                    "lin_2_activity": np.array(lin_2_activity)}
+        elif agent_type == "og_rnn":
+            data = {"init_loc": init_loc,
+                    "target_loc": target_loc,
+                    "action": np.array(action),
+                    "trial_counter": np.array(trial_counter),
+                    "location": np.array(location),
+                    "hx_activity": np.array(hx_activity),
+                    "cx_activity": np.array(cx_activity),
+                    "lin_activity": np.array(lin_activity)}
+    else:
+        data = {"init_loc": init_loc,
+                "target_loc": target_loc}
+    return steps_taken, data
 
 
 def train_neural_net(env, agent, num_envs, num_episodes_per_env, lr, save_model_freq, add_input, mode, save_dir, agent_type):

@@ -25,6 +25,7 @@ parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent
 parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
 parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
 parser.add_argument("--load_existing_agent", type=str, default=None, help="path to existing agent to load")
+parser.add_argument("--record_activity", type=bool, default=False, help="whether to record behaviour and neural data or not")
 args = parser.parse_args()
 argsdict = args.__dict__
 
@@ -37,6 +38,7 @@ agent_type = argsdict["agent_type"]
 save_dir = argsdict["save_dir"]
 save_model_freq = argsdict["save_model_freq"]
 load_existing_agent = argsdict["load_existing_agent"]
+record_activity = argsdict["record_activity"]
 
 print(argsdict)
 
@@ -62,7 +64,7 @@ if agent_type == 'mlp':
         v_loss = checkpoint['v_loss']
         i_episode = checkpoint['i_episode']
         baseline_agent.train()
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    steps_taken, data = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'mlp_agent_steps_taken')
 elif agent_type == 'rnn':
     rnn_agent = AC_RNN(
@@ -82,7 +84,7 @@ elif agent_type == 'rnn':
         v_loss = checkpoint['v_loss']
         i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
         rnn_agent.train()
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    steps_taken, data = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
 elif agent_type == 'og_mlp':
     baseline_agent = AC_Net(
@@ -94,7 +96,15 @@ elif agent_type == 'og_mlp':
         ).to(device)
     optimizer = torch.optim.Adam(baseline_agent.parameters(), lr=lr)
     add_input = None
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    if load_existing_agent is not None:
+        checkpoint = torch.load(load_existing_agent)
+        baseline_agent.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        p_loss = checkpoint['p_loss']
+        v_loss = checkpoint['v_loss']
+        i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
+        baseline_agent.train()
+    steps_taken, data = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type, record_activity)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'og_mlp_agent_steps_taken')
 elif agent_type == 'og_rnn':
     rnn_agent = AC_Net(
@@ -106,7 +116,14 @@ elif agent_type == 'og_rnn':
         ).to(device)
     optimizer = torch.optim.Adam(rnn_agent.parameters(), lr=lr)
     add_input = None
-    steps_taken, init_loc, target_loc = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
+    if load_existing_agent is not None:
+        checkpoint = torch.load(load_existing_agent)
+        rnn_agent.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        p_loss = checkpoint['p_loss']
+        v_loss = checkpoint['v_loss']
+        i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
+        rnn_agent.train()
+    steps_taken, data = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type, record_activity)
     plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'og_rnn_agent_steps_taken')
-np.save(os.path.join(save_dir, f"baseline_{agent_type}_init_locations.npy"), init_loc)
-np.save(os.path.join(save_dir, f"baseline_{agent_type}_goal_locations.npy"), target_loc)
+np.save(os.path.join(save_dir, f"baseline_{agent_type}_data.npy"), data)
