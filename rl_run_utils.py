@@ -132,27 +132,20 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
     init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     for i_episode in tqdm(range(num_episodes)):
-        #if i_episode % num_episodes_per_block > 0:
-            # unless first trial of the block:
-            # hide target location observation  # BUT HOW TO ADJUST NETWORK SIZE?
-        #if i_episode % num_episodes_per_block == num_episodes_per_block - 1
-            # the last trial of the block
-            # do backprop
+        step_counter = 0
         done = False
         observation = env.reset()
         init_loc[i_episode] = observation["agent"]
         target_loc[i_episode] = observation["target"]
-        agent.reinit_hid()
+        if i_episode % num_episodes_per_block == 0:
+            agent.reinit_hid()
         while not done: # act, step
-            if mode == 'tem':
-                assert add_input is not None
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(observation.values()))))), dim=0), dim=1).float()
-            elif mode == 'baseline':
-                assert add_input is None
-                if agent_type == "rnn" or agent_type == "mlp":
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()[0]
-                else:
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
+            if i_episode % num_episodes_per_block == 0:
+                input_to_model = torch.unsqueeze(torch.Tensor(np.reshape(render_observation_as_image(
+                    env.size, observation["agent"], observation["target"], show_target=True), (3, env.size, env.size))), dim=0).float()
+            else:
+                input_to_model = torch.unsqueeze(torch.Tensor(np.reshape(render_observation_as_image(
+                    env.size, observation["agent"], observation["target"], show_target=False), (3, env.size, env.size))), dim=0).float()
             pol, val = agent.forward(input_to_model)
             act, p, v = select_action(agent, pol, val)
             if record_activity:
@@ -168,9 +161,10 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                     lin_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
             observation, reward, done, info = env.step(act)
             agent.rewards.append(reward)
-        # print(f"This episode has {len(agent.rewards)} steps")
-        steps_taken.append(len(agent.rewards))
-        p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
+            step_counter += 1
+        steps_taken.append(step_counter)  # no not really
+        if i_episode % num_episodes_per_block == num_episodes_per_block - 1:  # last trial of the block
+            p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
         if (i_episode + 1) % save_model_freq == 0:
             torch.save({
                 'i_episode': i_episode,
