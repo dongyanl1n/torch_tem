@@ -25,8 +25,8 @@ def place_cells(size, num_neurons,location, activity, save_dir, plot=True):
                 axs[i_row, i_col].get_yaxis().set_visible(False)
         fig.suptitle('Mean activity by agent location', fontsize=16)
         plt.tight_layout()
-        plt.show()
-        # plt.savefig(os.path.join(save_dir, "place_cells.svg"), format='svg')
+        # plt.show()
+        plt.savefig(os.path.join(save_dir, "place_cells.svg"), format='svg')
     return occupancy, mean_activity
 
 
@@ -43,10 +43,10 @@ def HD_cells(num_neurons, num_actions, action, activity, save_dir, plot=True):
     # for i_neuron in range(num_neurons):  # for each neuron, normalize its activity across actions
     #     mean_activity[:, i_neuron] = (mean_activity[:, i_neuron] - np.min(mean_activity[:, i_neuron])) / np.ptp(mean_activity[:, i_neuron])
     if plot:
-        # fig_save_dir = os.path.join(save_dir, 'hd_cells')
-        # if not os.path.exists:
-        #     os.mkdir(fig_save_dir)
-        for i_neuron in range(num_neurons)[:2]:
+        fig_save_dir = os.path.join(save_dir, 'hd_cells')
+        if not os.path.exists(fig_save_dir):
+            os.mkdir(fig_save_dir)
+        for i_neuron in range(num_neurons):
             data = []
             for i_action in range(num_actions):
                 data.append(activity_by_action[i_action][:, i_neuron])
@@ -61,8 +61,8 @@ def HD_cells(num_neurons, num_actions, action, activity, save_dir, plot=True):
             ax2 = plt.subplot(1,2,2, projection='polar')
             ax2.plot(np.arange(0, 450, 90)*(np.pi/180), mean_activity[:, i_neuron])
             ax2.set_title('Mean activity (not normalized)')
-            plt.show()
-            # plt.savefig(os.path.join(fig_save_dir, f"{i_neuron}.svg"), format='svg')
+            # plt.show()
+            plt.savefig(os.path.join(fig_save_dir, f"{i_neuron}.svg"), format='svg')
     return activity_by_action, mean_activity
 
 
@@ -84,11 +84,11 @@ def goal_direction_cell(num_neurons, trial_counter, target_loc, location, action
         3: np.array([0, -1]),
         }
     valid_trial_idx = np.arange(len(trial_counter))[np.where(np.any(target_loc != location, axis=1))]
+    # all idx of trial_counter should be valid (because as soon as agent moves to target, the next trial starts and agent gets a new obs
     goal_direction = target_loc[valid_trial_idx] - location[valid_trial_idx]
     action_direction = np.zeros((len(valid_trial_idx), 2))
-    breakpoint()
     for i, idx in enumerate(valid_trial_idx):
-        action_direction[i] = action[idx][_action_to_direction]
+        action_direction[i] = _action_to_direction[action[idx]]
 
     # let a, b be N x 2 arrays. Then d will be a N x 1 array containing the dot products of each entry in a and b
     # No I don't have any idea why this works, but https://medium.com/analytics-vidhya/tensordot-explained-6673cfa5697f
@@ -100,7 +100,10 @@ def goal_direction_cell(num_neurons, trial_counter, target_loc, location, action
     unique_angles = np.unique(action_goal_angles)
     # and the goal direction
     if plot:
-        for i_neuron in range(num_neurons)[:2]:
+        fig_save_dir = os.path.join(save_dir, 'goal_dir_cells')
+        if not os.path.exists:
+            os.mkdir(fig_save_dir)
+        for i_neuron in range(num_neurons):
             responses = []
             for unique_angle in unique_angles:
                 responses.append(activity[action_goal_angles==unique_angle][:, i_neuron])
@@ -111,28 +114,26 @@ def goal_direction_cell(num_neurons, trial_counter, target_loc, location, action
             ax1.set_xlabel('Goal direction')
             # ax1.set_xticklabels(['a', 'Right', 'Up', 'Left', 'Down'])  # I don't know why but I have to put a placeholder label in the first position for the labels to look normal
             ax1.violinplot(responses, widths=1, showmeans=True, showextrema=False)
-            plt.show()
+            # plt.show()
+            plt.savefig(os.path.join(fig_save_dir, f"{i_neuron}.svg"), format='svg')
     return action_goal_angles
 
 
 if __name__ == "__main__":
-    data = np.load('/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/baseline_og_rnn_data.npy', allow_pickle=True).item()
+    data = np.load('/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/baseline_og_mlp_data.npy', allow_pickle=True).item()
     init_loc = data["init_loc"]
     target_loc = data["target_loc"]
-    hx_activity = data["hx_activity"]
-    cx_activity = data["cx_activity"]
-    lin_activity = data["lin_activity"]
+    # hx_activity = data["hx_activity"]
+    # cx_activity = data["cx_activity"]
+    lin_1_activity = data["lin_1_activity"]
+    lin_2_activity = data["lin_2_activity"]
     trial_counter = data["trial_counter"]
     location = data["location"]
     action = data["action"]
     init_loc = expand_loc(init_loc, trial_counter)
     target_loc = expand_loc(target_loc, trial_counter)
 
-    # occupancy, mean_place_activity = place_cells(5, 256, location, hx_activity, 'do not save for now', plot=True)
-    # activity_by_action, mean_HD_activity = HD_cells(256,4,action,hx_activity, 'do not save for now', plot=True)
-    action_goal_angles = goal_direction_cell(256, trial_counter, target_loc, location, action, hx_activity, 'do not save for now', plot=True)
+    occupancy, mean_place_activity = place_cells(5, 256, location, lin_1_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/mlp/lin1', plot=True)
+    activity_by_action, mean_HD_activity = HD_cells(256,4,action,lin_1_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/mlp/lin1', plot=True)
 
-
-
-# TODO: generate some random data of shape (t, 256) and run place/HD tuning analysis
-# TODO: repeat analysis for hx, ccx, lin_activity, lin_1_activity, lin_2_activity
+    # action_goal_angles = goal_direction_cell(256, trial_counter, target_loc, location, action, hx_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/rnn/hx', plot=True)
