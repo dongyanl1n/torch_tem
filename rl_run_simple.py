@@ -48,45 +48,7 @@ env = SimpleNavigation(size=size)
 
 torch.autograd.set_detect_anomaly(True)
 
-if agent_type == 'mlp':
-    baseline_agent = AC_MLP(
-        input_size=4,  # 2 for agent location, 2 for goal location
-        hidden_size=[num_neurons, num_neurons],  # linear, linear
-        action_size=4
-    ).to(device)
-    optimizer = torch.optim.Adam(baseline_agent.parameters(), lr=lr)
-    add_input = None
-    if load_existing_agent is not None:
-        checkpoint = torch.load(load_existing_agent)
-        baseline_agent.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        p_loss = checkpoint['p_loss']
-        v_loss = checkpoint['v_loss']
-        i_episode = checkpoint['i_episode']
-        baseline_agent.train()
-    steps_taken, data = train_neural_net_on_SimpleNavigation(env, baseline_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
-    plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'mlp_agent_steps_taken')
-elif agent_type == 'rnn':
-    rnn_agent = AC_RNN(
-        input_size=4,  # 2 for agent location, 2 for goal location
-        hidden_size=[num_neurons,num_neurons],  # LSTM, linear
-        batch_size=1,
-        num_LSTM_layers=1,
-        action_size=4
-    ).to(device)
-    optimizer = torch.optim.Adam(rnn_agent.parameters(), lr=lr)
-    add_input = None
-    if load_existing_agent is not None:
-        checkpoint = torch.load(load_existing_agent)
-        rnn_agent.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        p_loss = checkpoint['p_loss']
-        v_loss = checkpoint['v_loss']
-        i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
-        rnn_agent.train()
-    steps_taken, data = train_neural_net_on_SimpleNavigation(env, rnn_agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type)
-    plot_results(1, num_episodes, steps_taken, window_size, save_dir, 'rnn_agent_steps_taken')
-elif agent_type == 'og_mlp':
+if agent_type == 'og_mlp':
     baseline_agent = AC_Net(
             input_dimensions=4,
             action_dimensions=4,

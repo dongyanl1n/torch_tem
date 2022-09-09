@@ -174,69 +174,6 @@ class AC_Net(nn.Module):
                 self.cell_out.append(None)##
 
 
-class AC_MLP(torch.nn.Module):
-    def __init__(self, input_size, hidden_size, action_size):
-        super(AC_MLP, self).__init__()
-        assert type(hidden_size) == list and len(hidden_size) == 2
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.action_size = action_size
-        self.fc1 = torch.nn.Linear(self.input_size, self.hidden_size[0])
-        self.relu = torch.nn.ReLU()
-        self.fc2 = torch.nn.Linear(self.hidden_size[0], self.hidden_size[1])
-        self.sigmoid = torch.nn.Sigmoid()
-        self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
-        self.critic = torch.nn.Linear(self.hidden_size[1], 1)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
-        self.saved_actions = []
-        self.rewards = []
-
-    def forward(self, x):
-        x = x.to(self.device)
-        hidden = self.fc1(x)
-        relu = self.relu(hidden)
-        output = self.fc2(relu)
-        output = self.sigmoid(output)
-        policy = F.softmax(self.actor(output), dim=1)
-        value = self.critic(output)
-        return policy, value
-
-
-class AC_RNN(torch.nn.Module):
-    def __init__(self, input_size, hidden_size, batch_size, num_LSTM_layers, action_size):
-        super(AC_RNN, self).__init__()
-        assert type(hidden_size) == list and len(hidden_size) == 2
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.action_size = action_size
-        self.batch_size = batch_size
-        self.num_LSTM_layers = num_LSTM_layers  # number of LSTM layers
-        self.lstm = torch.nn.LSTM(self.input_size, self.hidden_size[0], self.num_LSTM_layers)  # TODO: add a dropout layer?
-        self.linear = torch.nn.Linear(self.hidden_size[0], self.hidden_size[1])
-        self.relu = torch.nn.ReLU()
-        self.actor = torch.nn.Linear(self.hidden_size[1], self.action_size)
-        self.critic = torch.nn.Linear(self.hidden_size[1], 1)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
-        self.saved_actions = []
-        self.rewards = []
-
-    def reinit_hid(self):
-        self.hidden = (torch.randn(self.num_LSTM_layers, self.batch_size, self.hidden_size[0]).to(self.device),  # hx: (#layers, hidden_size)
-                       torch.randn(self.num_LSTM_layers, self.batch_size, self.hidden_size[0]).to(self.device))  # cx: (#layers, hidden_size)
-
-    def forward(self, x):
-        assert x.dim() == 3
-        assert x.shape[-1] == self.input_size
-        assert x.shape[-2] == self.batch_size
-        x = x.to(self.device)
-        out, self.hidden = self.lstm(x, self.hidden)
-        output = self.linear(out)
-        output = self.relu(output)
-        policy = F.softmax(self.actor(output), dim=1)
-        value = self.critic(output)
-        return policy, value
-
-
 # ======================================
 
 # ---------- helper functions ----------
