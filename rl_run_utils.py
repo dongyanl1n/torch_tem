@@ -28,7 +28,6 @@ def bin_rewards(epi_rewards, window_size):
     return avg_rewards
 
 
-
 def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type, record_activity=False):
     assert mode in ['tem', 'baseline']
     steps_taken = []
