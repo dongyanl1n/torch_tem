@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from rl_run import bin_rewards
+import os
 
 # Assume we have:
 # goal_locations.npy: (num_envs,)
@@ -47,7 +48,7 @@ plt.show()
 plt.savefig(data_dir+agent_name+"_steps_taken.svg", format='svg')
 
 # occupancy figure
-num_rows = 2
+num_rows = 2  # TODO: fix this so that it doesn't only apply to 10-env setting
 num_cols = num_envs // num_rows
 fig, axs = plt.subplots(num_rows, num_cols)
 for i_row in range(num_rows):

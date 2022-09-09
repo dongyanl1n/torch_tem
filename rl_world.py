@@ -9,7 +9,7 @@ import pygame
 from gym.utils import seeding
 
 
-class Navigation(object):
+class TEM_Navigation(object):
     def __init__(self, edge_length, num_objects):
         """
         A edge_length by edge_length grid environment in which agent must navigate to the goal location using as short
@@ -298,3 +298,11 @@ class SimpleNavigation(gym.Env):  # COPIED FROM https://github.com/Farama-Founda
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
+
+
+def render_observation_as_image(size, agent_loc, target_loc, show_target=True):
+    image = np.ones((size, size, 3))*255  # white background
+    image[agent_loc[0], agent_loc[1]] = [0, 0, 255]  # blue for agent location
+    if show_target:
+        image[target_loc[0], target_loc[1]] = [255, 0, 0]  # red for goal location
+    return image
