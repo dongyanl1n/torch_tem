@@ -3,6 +3,7 @@ import matplotlib
 import rl_world
 from rl_model import *
 from rl_world import *
+from rl_run_utils import *
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -14,203 +15,121 @@ import datetime
 matplotlib.use('Agg')
 
 
-def bin_rewards(epi_rewards, window_size):
-    """
-    Average the epi_rewards with a moving window.
-    """
-    epi_rewards = epi_rewards.astype(np.float32)
-    avg_rewards = np.zeros_like(epi_rewards)
-    for i_episode in range(1, len(epi_rewards)+1):
-        if 1 < i_episode < window_size:
-            avg_rewards[i_episode-1] = np.mean(epi_rewards[:i_episode])
-        elif window_size <= i_episode <= len(epi_rewards):
-            avg_rewards[i_episode-1] = np.mean(epi_rewards[i_episode - window_size: i_episode])
-    return avg_rewards
+parser = argparse.ArgumentParser(description="Run neural networks on simple navigation environment")
+parser.add_argument("--num_episodes",type=int,default=10000,help="Number of episodes to train agent on the environment")
+parser.add_argument("--lr",type=float,default=0.0001,help="learning rate")
+parser.add_argument("--size",type=int,default=5,help="Length of edge for the environment")
+parser.add_argument("--num_neurons", type=int, default=128, help="Number of units in each hidden layer")
+parser.add_argument("--window_size", type=int, default=1000, help="Size of rolling window for smoothing out performance plot")
+parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent to use. Either 'rnn' or 'mlp'.")
+parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
+parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
+parser.add_argument("--load_existing_agent", type=str, default=None, help="path to existing agent to load")
+parser.add_argument("--record_activity", type=bool, default=False, help="whether to record behaviour and neural data or not")
+parser.add_argument("--morris_water_maze", type=bool, default=False, help="make this task a morris water maze")
+
+args = parser.parse_args()
+argsdict = args.__dict__
+
+num_episodes = argsdict['num_episodes']
+lr = argsdict['lr']
+size = argsdict['size']
+num_neurons = argsdict['num_neurons']
+window_size = argsdict["window_size"]
+agent_type = argsdict["agent_type"]
+save_dir = argsdict["save_dir"]
+save_model_freq = argsdict["save_model_freq"]
+load_existing_agent = argsdict["load_existing_agent"]
+record_activity = argsdict["record_activity"]
+morris_water_maze = argsdict["morris_water_maze"]
+
+print(argsdict)
+
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu:0')
+
+env = SimpleNavigation(size=size)
+
+torch.autograd.set_detect_anomaly(True)
+
+rfsize = 2
+padding = 0
+stride = 1
+dilation = 1
+layer_1_out_h, layer_1_out_w = conv_output(size, size, padding, dilation, rfsize, stride)
+layer_2_out_h, layer_2_out_w = conv_output(layer_1_out_h, layer_1_out_w, padding, dilation, rfsize, stride)
+layer_3_out_h, layer_3_out_w = conv_output(layer_2_out_h, layer_2_out_w, padding, dilation, rfsize, stride)
+layer_4_out_h, layer_4_out_w = conv_output(layer_3_out_h, layer_3_out_w, padding, dilation, rfsize, stride)
+conv_1_features = 16
+conv_2_features = 32
 
 
-
-def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type, record_activity=False):
-    assert mode in ['tem', 'baseline']
-    steps_taken = []
-    if record_activity:
-        assert agent_type == "og_rnn" or agent_type == "og_mlp"
-        assert len(agent.hidden_types) == 2  # Two layer MLP for now
-        trial_counter = []
-        location = []
-        action = []
-        if agent_type == "og_mlp":
-            lin_1_activity = []
-            lin_2_activity = []
-        elif agent_type == "og_rnn":
-            hx_activity = []
-            cx_activity = []
-            lin_activity = []
-    init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
-    target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
-    for i_episode in tqdm(range(num_episodes)):
-        done = False
-        observation = env.reset()
-        init_loc[i_episode] = observation["agent"]
-        target_loc[i_episode] = observation["target"]
-        agent.reinit_hid()
-        while not done: # act, step
-            if mode == 'tem':
-                assert add_input is not None
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(observation.values()))))), dim=0), dim=1).float()
-            elif mode == 'baseline':
-                assert add_input is None
-                if agent_type == "og_rnn" or agent_type == "og_mlp":
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()[0]
-                else:
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
-            pol, val = agent.forward(input_to_model)
-            act, p, v = select_action(agent, pol, val)
-            if record_activity:
-                action.append(act)
-                trial_counter.append(i_episode)
-                location.append(observation["agent"])
-                if agent_type == "og_mlp":
-                    lin_1_activity.append(agent.cell_out[0].clone().detach().cpu().numpy().squeeze())
-                    lin_2_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
-                elif agent_type == "og_rnn":
-                    hx_activity.append(agent.hx[0].clone().detach().cpu().numpy().squeeze())
-                    cx_activity.append(agent.cx[0].clone().detach().cpu().numpy().squeeze())
-                    lin_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
-            observation, reward, done, info = env.step(act)
-            agent.rewards.append(reward)
-        # print(f"This episode has {len(agent.rewards)} steps")
-        steps_taken.append(len(agent.rewards))
-        p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-        if (i_episode + 1) % save_model_freq == 0:
-            torch.save({
-                'i_episode': i_episode,
-                'model_state_dict': agent.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'p_loss': p_loss,
-                'v_loss': v_loss
-            }, os.path.join(save_dir, f'{mode}_{agent_type}_Epi{i_episode}.pt'))
-    if record_activity:  # zip recorded data
-        if agent_type == "og_mlp":
-            data = {"init_loc": init_loc,
-                    "target_loc": target_loc,
-                    "action": np.array(action),
-                    "trial_counter": np.array(trial_counter),
-                    "location": np.array(location),
-                    "lin_1_activity": np.array(lin_1_activity),
-                    "lin_2_activity": np.array(lin_2_activity)}
-        elif agent_type == "og_rnn":
-            data = {"init_loc": init_loc,
-                    "target_loc": target_loc,
-                    "action": np.array(action),
-                    "trial_counter": np.array(trial_counter),
-                    "location": np.array(location),
-                    "hx_activity": np.array(hx_activity),
-                    "cx_activity": np.array(cx_activity),
-                    "lin_activity": np.array(lin_activity)}
-    else:
-        data = {"init_loc": init_loc,
-                "target_loc": target_loc}
-    return steps_taken, data
+if agent_type == 'mlp':
+    agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['linear', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        ).to(device)
+elif agent_type == 'rnn':
+    agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['lstm', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        ).to(device)
+elif agent_type == 'conv_mlp':
+        agent = AC_Conv_Net(
+            input_dimensions=(size, size, 3),
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types= ['conv', 'pool', 'conv', 'pool', 'linear', 'linear'],
+            hidden_dimensions=[
+                (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
+                (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
+                (layer_3_out_h, layer_3_out_w, conv_2_features),  # conv
+                (layer_4_out_h, layer_4_out_w, conv_2_features),  # pool
+                num_neurons,
+                num_neurons],
+            rfsize=rfsize,
+            padding=padding,
+            stride=stride
+        ).to(device)
+elif agent_type == 'conv_rnn':
+    agent = AC_Conv_Net(
+        input_dimensions=(size, size, 3),
+        action_dimensions=4,
+        batch_size=1,
+        hidden_types= ['conv', 'pool', 'conv', 'pool', 'lstm', 'linear'],
+        hidden_dimensions=[
+            (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
+            (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
+            (layer_3_out_h, layer_3_out_w, conv_2_features),  # conv
+            (layer_4_out_h, layer_4_out_w, conv_2_features),  # pool
+            num_neurons,
+            num_neurons],
+        rfsize=rfsize,
+        padding=padding,
+        stride=stride
+    ).to(device)
 
 
-def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq, add_input, mode, save_dir, agent_type, num_episodes_per_block=2, record_activity=False):
-    assert mode in ['tem', 'baseline']
-    steps_taken = []
-    if record_activity:
-        assert agent_type == "og_rnn" or agent_type == "og_mlp"
-        assert len(agent.hidden_types) == 2  # Two layer MLP for now
-        trial_counter = []
-        location = []
-        action = []
-        if agent_type == "og_mlp":
-            lin_1_activity = []
-            lin_2_activity = []
-        elif agent_type == "og_rnn":
-            hx_activity = []
-            cx_activity = []
-            lin_activity = []
-    init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
-    target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
-    for i_episode in tqdm(range(num_episodes)):
-        #if i_episode % num_episodes_per_block > 0:
-            # unless first trial of the block:
-            # hide target location observation  # BUT HOW TO ADJUST NETWORK SIZE?
-        #if i_episode % num_episodes_per_block == num_episodes_per_block - 1
-            # the last trial of the block
-            # do backprop
-        done = False
-        observation = env.reset()
-        init_loc[i_episode] = observation["agent"]
-        target_loc[i_episode] = observation["target"]
-        agent.reinit_hid()
-        while not done: # act, step
-            if mode == 'tem':
-                assert add_input is not None
-                input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate((add_input, np.concatenate(list(observation.values()))))), dim=0), dim=1).float()
-            elif mode == 'baseline':
-                assert add_input is None
-                if agent_type == "og_rnn" or agent_type == "og_mlp":
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()[0]
-                else:
-                    input_to_model = torch.unsqueeze(torch.unsqueeze(torch.as_tensor(np.concatenate(list(observation.values()))), dim=0), dim=1).float()
-            pol, val = agent.forward(input_to_model)
-            act, p, v = select_action(agent, pol, val)
-            if record_activity:
-                action.append(act)
-                trial_counter.append(i_episode)
-                location.append(observation["agent"])
-                if agent_type == "og_mlp":
-                    lin_1_activity.append(agent.cell_out[0].clone().detach().cpu().numpy().squeeze())
-                    lin_2_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
-                elif agent_type == "og_rnn":
-                    hx_activity.append(agent.hx[0].clone().detach().cpu().numpy().squeeze())
-                    cx_activity.append(agent.cx[0].clone().detach().cpu().numpy().squeeze())
-                    lin_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
-            observation, reward, done, info = env.step(act)
-            agent.rewards.append(reward)
-        # print(f"This episode has {len(agent.rewards)} steps")
-        steps_taken.append(len(agent.rewards))
-        p_loss, v_loss = finish_trial(agent, 0.99, optimizer)
-        if (i_episode + 1) % save_model_freq == 0:
-            torch.save({
-                'i_episode': i_episode,
-                'model_state_dict': agent.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'p_loss': p_loss,
-                'v_loss': v_loss
-            }, os.path.join(save_dir, f'{mode}_{agent_type}_Epi{i_episode}.pt'))
-    if record_activity:  # zip recorded data
-        if agent_type == "og_mlp":
-            data = {"init_loc": init_loc,
-                    "target_loc": target_loc,
-                    "action": np.array(action),
-                    "trial_counter": np.array(trial_counter),
-                    "location": np.array(location),
-                    "lin_1_activity": np.array(lin_1_activity),
-                    "lin_2_activity": np.array(lin_2_activity)}
-        elif agent_type == "og_rnn":
-            data = {"init_loc": init_loc,
-                    "target_loc": target_loc,
-                    "action": np.array(action),
-                    "trial_counter": np.array(trial_counter),
-                    "location": np.array(location),
-                    "hx_activity": np.array(hx_activity),
-                    "cx_activity": np.array(cx_activity),
-                    "lin_activity": np.array(lin_activity)}
-    else:
-        data = {"init_loc": init_loc,
-                "target_loc": target_loc}
-    return steps_taken, data
+optimizer = torch.optim.Adam(agent.parameters(), lr=lr)
+add_input = None
+if load_existing_agent is not None:
+    checkpoint = torch.load(load_existing_agent)
+    agent.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    p_loss = checkpoint['p_loss']
+    v_loss = checkpoint['v_loss']
+    i_episode = checkpoint['i_episode']  # TODO: integrate this into train_neural_net_on_simpleNavigation
+    agent.train()
 
+if not morris_water_maze:
+    steps_taken, data = train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type, record_activity)
+else:
+    steps_taken, data = train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq, add_input, 'baseline', save_dir, agent_type, record_activity)
+plot_results(1, num_episodes, steps_taken, window_size, save_dir, agent_type+'steps_taken')
 
-
-def plot_results(num_envs, num_episodes_per_env, rewards, window_size, save_dir, title):
-
-    plt.figure()
-    plt.plot(np.arange(num_envs*num_episodes_per_env), bin_rewards(np.array(rewards), window_size=window_size))
-    plt.vlines(x=np.arange(start=num_episodes_per_env, stop=num_envs*num_episodes_per_env, step=num_episodes_per_env),
-               ymin=min(bin_rewards(np.array(rewards), window_size=window_size))-5,
-               ymax=max(bin_rewards(np.array(rewards), window_size=window_size))+5, linestyles='dotted')
-    plt.title(title)
-    plt.savefig(os.path.join(save_dir, f'{title}_rewards.svg'), format='svg')
-
+np.save(os.path.join(save_dir, f"baseline_{agent_type}_data.npy"), data)
