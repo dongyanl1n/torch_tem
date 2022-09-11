@@ -200,7 +200,7 @@ class AC_Conv_Net(nn.Module):
         '''
 
         # call the super-class init
-        super(AC_Net, self).__init__()
+        super(AC_Conv_Net, self).__init__()
 
         # store the input dimensions
         self.input_d = input_dimensions
