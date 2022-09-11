@@ -25,8 +25,8 @@ parser.add_argument("--agent_type", type=str, default='rnn', help="type of agent
 parser.add_argument("--save_dir", type=str, default='experiments/', help="path to save figures.")
 parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency (# of episodes) of saving model checkpoint")
 parser.add_argument("--load_existing_agent", type=str, default=None, help="path to existing agent to load")
-parser.add_argument("--record_activity", type=bool, default=False, help="whether to record behaviour and neural data or not")
-parser.add_argument("--morris_water_maze", type=bool, default=False, help="make this task a morris water maze")
+parser.add_argument("--record_activity", type=str, default="False", help="whether to record behaviour and neural data or not")
+parser.add_argument("--morris_water_maze", type=str, default="False", help="make this task a morris water maze")
 
 args = parser.parse_args()
 argsdict = args.__dict__
