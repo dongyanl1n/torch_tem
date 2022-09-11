@@ -40,8 +40,8 @@ agent_type = argsdict["agent_type"]
 save_dir = argsdict["save_dir"]
 save_model_freq = argsdict["save_model_freq"]
 load_existing_agent = argsdict["load_existing_agent"]
-record_activity = argsdict["record_activity"]
-morris_water_maze = argsdict["morris_water_maze"]
+record_activity = True if argsdict["record_activity"] == "True" or argsdict["record_activity"] == True else False
+morris_water_maze = True if argsdict["morris_water_maze"] == "True" or argsdict["morris_water_maze"] == True else False
 
 print(argsdict)
 
