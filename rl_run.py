@@ -129,7 +129,7 @@ if load_existing_agent is not None:
 if not morris_water_maze:
     steps_taken, data = train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, save_dir, agent_type, record_activity)
 else:
-    steps_taken, data = train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq,  save_dir, agent_type, num_episodes_per_block=5, record_activity=record_activity)
+    steps_taken, data = train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq,  save_dir, agent_type, num_episodes_per_block=2, record_activity=record_activity)
 plot_results(1, num_episodes, steps_taken, window_size, save_dir, agent_type+'steps_taken')
 
 if not morris_water_maze:

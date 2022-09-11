@@ -120,6 +120,7 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
             lin_activity = []
     init_loc = np.zeros((num_episodes, 2), dtype=np.int8)
     target_loc = np.zeros((num_episodes, 2), dtype=np.int8)
+    breakpoint()
     for i_episode in tqdm(range(num_episodes)):
         step_counter = 0
         done = False
