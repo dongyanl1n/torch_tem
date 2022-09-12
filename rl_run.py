@@ -27,6 +27,7 @@ parser.add_argument("--save_model_freq", type=int, default=1000, help="Frequency
 parser.add_argument("--load_existing_agent", type=str, default=None, help="path to existing agent to load")
 parser.add_argument("--record_activity", type=str, default="False", help="whether to record behaviour and neural data or not")
 parser.add_argument("--morris_water_maze", type=str, default="False", help="make this task a morris water maze")
+parser.add_argument("--num_episodes_per_block", type=int, default=3, help="number of episodes in each block of morris water maze (i.e. how often the platform changes location")
 
 args = parser.parse_args()
 argsdict = args.__dict__
@@ -42,6 +43,7 @@ save_model_freq = argsdict["save_model_freq"]
 load_existing_agent = argsdict["load_existing_agent"]
 record_activity = True if argsdict["record_activity"] == "True" or argsdict["record_activity"] == True else False
 morris_water_maze = True if argsdict["morris_water_maze"] == "True" or argsdict["morris_water_maze"] == True else False
+num_episodes_per_block = argsdict["num_episodes_per_block"]
 
 print(argsdict)
 
@@ -129,7 +131,7 @@ if load_existing_agent is not None:
 if not morris_water_maze:
     steps_taken, data = train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, save_model_freq, save_dir, agent_type, record_activity)
 else:
-    steps_taken, data = train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq,  save_dir, agent_type, num_episodes_per_block=2, record_activity=record_activity)
+    steps_taken, data = train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq,  save_dir, agent_type, num_episodes_per_block=num_episodes_per_block, record_activity=record_activity)
 plot_results(1, num_episodes, steps_taken, window_size, save_dir, agent_type+'steps_taken')
 
 if not morris_water_maze:
