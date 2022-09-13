@@ -190,7 +190,7 @@ class SimpleNavigation(gym.Env):  # COPIED FROM https://github.com/Farama-Founda
             )
         }
 
-    def reset(self, seed=None, return_info=False, options=None):
+    def reset(self, seed=None, return_info=False, options=None, reset_target_loc=True):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
@@ -198,9 +198,10 @@ class SimpleNavigation(gym.Env):  # COPIED FROM https://github.com/Farama-Founda
         self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
 
         # We will sample the target's location randomly until it does not coincide with the agent's location
-        self._target_location = self._agent_location
-        while np.array_equal(self._target_location, self._agent_location):
-            self._target_location = self.np_random.integers(0, self.size, size=2, dtype=int)
+        if reset_target_loc:
+            self._target_location = self._agent_location
+            while np.array_equal(self._target_location, self._agent_location):
+                self._target_location = self.np_random.integers(0, self.size, size=2, dtype=int)
 
         observation = self._get_obs()
         info = self._get_info()

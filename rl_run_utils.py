@@ -88,7 +88,8 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                     "trial_counter": np.array(trial_counter),
                     "location": np.array(location),
                     "lin_1_activity": np.array(lin_1_activity),
-                    "lin_2_activity": np.array(lin_2_activity)}
+                    "lin_2_activity": np.array(lin_2_activity),
+                    "steps_taken": np.array(steps_taken)}
         elif agent_type == "rnn":
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
@@ -97,10 +98,12 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                     "location": np.array(location),
                     "hx_activity": np.array(hx_activity),
                     "cx_activity": np.array(cx_activity),
-                    "lin_activity": np.array(lin_activity)}
+                    "lin_activity": np.array(lin_activity),
+                    "steps_taken": np.array(steps_taken)}
     else:
         data = {"init_loc": init_loc,
-                "target_loc": target_loc}
+                "target_loc": target_loc,
+                "steps_taken": np.array(steps_taken)}
     return steps_taken, data
 
 
@@ -124,7 +127,10 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
     for i_episode in tqdm(range(num_episodes)):
         step_counter = 0
         done = False
-        observation = env.reset()
+        if i_episode % num_episodes_per_block == 0:
+            observation = env.reset(reset_target_loc=True)
+        else:
+            observation = env.reset(reset_target_loc=False)
         init_loc[i_episode] = observation["agent"]
         target_loc[i_episode] = observation["target"]
         if i_episode % num_episodes_per_block == 0:
@@ -171,7 +177,8 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                     "trial_counter": np.array(trial_counter),
                     "location": np.array(location),
                     "lin_1_activity": np.array(lin_1_activity),
-                    "lin_2_activity": np.array(lin_2_activity)}
+                    "lin_2_activity": np.array(lin_2_activity),
+                    "steps_taken": np.array(steps_taken)}
         elif agent_type == "rnn":
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
@@ -180,10 +187,12 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                     "location": np.array(location),
                     "hx_activity": np.array(hx_activity),
                     "cx_activity": np.array(cx_activity),
-                    "lin_activity": np.array(lin_activity)}
+                    "lin_activity": np.array(lin_activity),
+                    "steps_taken": np.array(steps_taken)}
     else:
         data = {"init_loc": init_loc,
-                "target_loc": target_loc}
+                "target_loc": target_loc,
+                "steps_taken": np.array(steps_taken)}
     return steps_taken, data
 
 
