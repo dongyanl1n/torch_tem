@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 import os
 
 
+def calculate_extra_steps(steps_taken, init_loc, target_loc):
+    shortest_path = np.linalg.norm(
+        init_loc - target_loc, ord=1, axis=1
+    )
+    extra_steps = steps_taken - shortest_path
+    return extra_steps
+
 def place_cells(size, num_neurons,location, activity, save_dir, plot=True):
     occupancy = np.zeros((size, size))
     mean_activity = np.zeros((size, size, num_neurons))
