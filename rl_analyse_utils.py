@@ -1,6 +1,83 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from rl_model import conv_output, AC_Net, AC_Conv_Net
+import torch
+
+
+def get_rnn_weights(network_path, agent_type, num_neurons, size,
+                    rfsize = 2, padding = 0, stride = 1, dilation = 1, conv_1_features = 16, conv_2_features = 32):
+    layer_1_out_h, layer_1_out_w = conv_output(size, size, padding, dilation, rfsize, stride)
+    layer_2_out_h, layer_2_out_w = conv_output(layer_1_out_h, layer_1_out_w, padding, dilation, rfsize, stride)
+    layer_3_out_h, layer_3_out_w = conv_output(layer_2_out_h, layer_2_out_w, padding, dilation, rfsize, stride)
+    layer_4_out_h, layer_4_out_w = conv_output(layer_3_out_h, layer_3_out_w, padding, dilation, rfsize, stride)
+
+    if agent_type == 'mlp':
+        agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['linear', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        )
+    elif agent_type == 'rnn':
+        agent = AC_Net(
+            input_dimensions=4,
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['lstm', 'linear'],
+            hidden_dimensions=[num_neurons, num_neurons]
+        )
+    elif agent_type == 'conv_mlp':
+        agent = AC_Conv_Net(
+            input_dimensions=(size, size, 3),
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['conv', 'pool', 'conv', 'pool', 'linear', 'linear'],
+            hidden_dimensions=[
+                (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
+                (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
+                (layer_3_out_h, layer_3_out_w, conv_2_features),  # conv
+                (layer_4_out_h, layer_4_out_w, conv_2_features),  # pool
+                num_neurons,
+                num_neurons],
+            rfsize=rfsize,
+            padding=padding,
+            stride=stride
+        )
+    elif agent_type == 'conv_rnn':
+        agent = AC_Conv_Net(
+            input_dimensions=(size, size, 3),
+            action_dimensions=4,
+            batch_size=1,
+            hidden_types=['conv', 'pool', 'conv', 'pool', 'lstm', 'linear'],
+            hidden_dimensions=[
+                (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
+                (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
+                (layer_3_out_h, layer_3_out_w, conv_2_features),  # conv
+                (layer_4_out_h, layer_4_out_w, conv_2_features),  # pool
+                num_neurons,
+                num_neurons],
+            rfsize=rfsize,
+            padding=padding,
+            stride=stride
+        )
+    checkpoint = torch.load(network_path,map_location=torch.device('cpu'))
+    agent.load_state_dict(checkpoint['model_state_dict'])
+    agent.eval()
+    rnn_params = {}
+    lstm_index = agent.hidden_types.index('lstm')
+    for name, param in agent.named_parameters():
+        if name == f'hidden.{lstm_index}.weight_ih':
+            rnn_params["weight_ih"] = param
+        if name == f'hidden.{lstm_index}.weight_hh':
+            rnn_params["weight_hh"] = param
+        if name == f'hidden.{lstm_index}.bias_ih':
+            rnn_params["bias_ih"] = param
+        if name == f'hidden.{lstm_index}.bias_hh':
+            rnn_params["bias_hh"] = param
+    return rnn_params
+
 
 
 def calculate_extra_steps(steps_taken, init_loc, target_loc):

@@ -86,7 +86,7 @@ elif agent_type == 'conv_mlp':
             input_dimensions=(size, size, 3),
             action_dimensions=4,
             batch_size=1,
-            hidden_types= ['conv', 'pool', 'conv', 'pool', 'linear', 'linear'],
+            hidden_types=['conv', 'pool', 'conv', 'pool', 'linear', 'linear'],
             hidden_dimensions=[
                 (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
                 (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
@@ -103,7 +103,7 @@ elif agent_type == 'conv_rnn':
         input_dimensions=(size, size, 3),
         action_dimensions=4,
         batch_size=1,
-        hidden_types= ['conv', 'pool', 'conv', 'pool', 'lstm', 'linear'],
+        hidden_types=['conv', 'pool', 'conv', 'pool', 'lstm', 'linear'],
         hidden_dimensions=[
             (layer_1_out_h, layer_1_out_w, conv_1_features),  # conv
             (layer_2_out_h, layer_2_out_w, conv_1_features),  # pool
