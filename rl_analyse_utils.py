@@ -79,6 +79,62 @@ def get_rnn_weights(network_path, agent_type, num_neurons, size,
     return rnn_params
 
 
+def get_cell_num_by_max_location(size, num_neurons, location, activity):
+    _, mean_place_activity = place_cells(size, num_neurons, location, activity, save_dir=None, plot=False)
+    cell_num_by_max_location = {}
+    assert size == mean_place_activity.shape[0], "Wrong size"
+    assert num_neurons == mean_place_activity.shape[-1], "Wrong num_neurons"
+    max_loc = np.argmax(mean_place_activity.reshape(size**2, num_neurons), axis=0)
+    for i_loc in range(5**2):
+        cell_num_by_max_location[i_loc] = np.where(max_loc == i_loc)[0]
+    return max_loc, cell_num_by_max_location
+
+
+def get_cell_num_by_max_HD(action, activity):
+    activity_by_action, mean_HD_activity = HD_cells(256,4,action, activity, save_dir=None, plot=False)
+    actual_mean_HD_activity = mean_HD_activity[:4]
+    cell_num_by_max_HD = {}
+    max_HD = np.argmax(actual_mean_HD_activity, axis=0)
+    for i_HD in range(4):
+        cell_num_by_max_HD[i_HD] = np.where(max_HD == i_HD)[0]
+    return cell_num_by_max_HD
+
+
+def sort_weight_matrix(weight_matrix, cell_nums_wanted):
+    new_weight_matrix = np.empty_like(weight_matrix)
+    new_idx = np.concatenate(cell_nums_wanted.values())
+    for i, i_new_idx in enumerate(new_idx):
+        new_weight_matrix[i] = weight_matrix[i_new_idx]
+    for i, i_new_idx in enumerate(new_idx):
+        new_weight_matrix[:, i] = weight_matrix[:, i_new_idx]
+    return new_weight_matrix
+
+
+def neighbours_and_connections(size, num_neurons, location, activity, weight_matrix):
+    neighbour_dict = {}
+    connection_dict = {}
+    max_loc, cell_num_by_max_location = get_cell_num_by_max_location(size, num_neurons, location, activity)
+    for i_neuron in range(num_neurons):
+        neuron_neighbour_dict = {}
+        neuron_connection_dict = {}
+        HD_loc_mapping = {
+            'Right': np.array([1,0]),
+            'Up': np.array([0,1]),
+            'Left': np.array([-1,0]),
+            'Down': np.array([0,-1])
+        }
+        neuron_place_field = max_loc[i_neuron]
+        neuron_place_x = neuron_place_field // 5
+        neuron_place_y = neuron_place_field % 5
+        for HD in ['Right', 'Up', 'Left', 'Down']:
+            next_loc = np.array([neuron_place_x, neuron_place_y]) + HD_loc_mapping[HD]
+            if 0 <= (next_loc[0]*5 + next_loc[1]) <= 24:
+                neuron_neighbour_dict[HD] = np.where(max_loc == next_loc)
+                neuron_connection_dict[HD] = weight_matrix[i_neuron, neuron_neighbour_dict[HD]]
+        neighbour_dict[i_neuron] = neuron_neighbour_dict
+        connection_dict[i_neuron] = neuron_connection_dict
+    return neighbour_dict, connection_dict
+
 
 def calculate_extra_steps(steps_taken, init_loc, target_loc):
     shortest_path = np.linalg.norm(
