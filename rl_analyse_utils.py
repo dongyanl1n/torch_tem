@@ -97,12 +97,12 @@ def get_cell_num_by_max_HD(action, activity):
     max_HD = np.argmax(actual_mean_HD_activity, axis=0)
     for i_HD in range(4):
         cell_num_by_max_HD[i_HD] = np.where(max_HD == i_HD)[0]
-    return cell_num_by_max_HD
+    return max_HD, cell_num_by_max_HD
 
 
 def sort_weight_matrix(weight_matrix, cell_nums_wanted):
     new_weight_matrix = np.empty_like(weight_matrix)
-    new_idx = np.concatenate(cell_nums_wanted.values())
+    new_idx = np.concatenate(list(cell_nums_wanted.values()))
     for i, i_new_idx in enumerate(new_idx):
         new_weight_matrix[i] = weight_matrix[i_new_idx]
     for i, i_new_idx in enumerate(new_idx):
@@ -113,23 +113,21 @@ def sort_weight_matrix(weight_matrix, cell_nums_wanted):
 def neighbours_and_connections(size, num_neurons, location, activity, weight_matrix):
     neighbour_dict = {}
     connection_dict = {}
+    HD_loc_mapping = {
+        'Right': 1,
+        'Up': -size,
+        'Left': -1,
+        'Down': size
+    }
     max_loc, cell_num_by_max_location = get_cell_num_by_max_location(size, num_neurons, location, activity)
     for i_neuron in range(num_neurons):
         neuron_neighbour_dict = {}
         neuron_connection_dict = {}
-        HD_loc_mapping = {
-            'Right': np.array([1,0]),
-            'Up': np.array([0,1]),
-            'Left': np.array([-1,0]),
-            'Down': np.array([0,-1])
-        }
         neuron_place_field = max_loc[i_neuron]
-        neuron_place_x = neuron_place_field // 5
-        neuron_place_y = neuron_place_field % 5
         for HD in ['Right', 'Up', 'Left', 'Down']:
-            next_loc = np.array([neuron_place_x, neuron_place_y]) + HD_loc_mapping[HD]
-            if 0 <= (next_loc[0]*5 + next_loc[1]) <= 24:
-                neuron_neighbour_dict[HD] = np.where(max_loc == next_loc)
+            next_loc = neuron_place_field + HD_loc_mapping[HD]
+            if 0 <= next_loc <= size**2-1:
+                neuron_neighbour_dict[HD] = np.where(max_loc == next_loc)[0]
                 neuron_connection_dict[HD] = weight_matrix[i_neuron, neuron_neighbour_dict[HD]]
         neighbour_dict[i_neuron] = neuron_neighbour_dict
         connection_dict[i_neuron] = neuron_connection_dict
@@ -260,20 +258,38 @@ def goal_direction_cell(num_neurons, trial_counter, target_loc, location, action
 
 
 if __name__ == "__main__":
-    data = np.load('/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/baseline_og_mlp_data.npy', allow_pickle=True).item()
+    data = np.load('/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/baseline_og_rnn_data.npy', allow_pickle=True).item()  # TODO：collect new rnn data corresponding to the weights
     init_loc = data["init_loc"]
     target_loc = data["target_loc"]
-    # hx_activity = data["hx_activity"]
-    # cx_activity = data["cx_activity"]
-    lin_1_activity = data["lin_1_activity"]
-    lin_2_activity = data["lin_2_activity"]
+    hx_activity = data["hx_activity"]
+    cx_activity = data["cx_activity"]
+    # lin_1_activity = data["lin_1_activity"]
+    # lin_2_activity = data["lin_2_activity"]
     trial_counter = data["trial_counter"]
     location = data["location"]
     action = data["action"]
     init_loc = expand_loc(init_loc, trial_counter)
     target_loc = expand_loc(target_loc, trial_counter)
 
-    occupancy, mean_place_activity = place_cells(5, 256, location, lin_1_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/mlp/lin1', plot=True)
-    activity_by_action, mean_HD_activity = HD_cells(256,4,action,lin_1_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/mlp/lin1', plot=True)
+    occupancy, mean_place_activity = place_cells(5, 256, location, hx_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/rnn/hx', plot=False)
+    activity_by_action, mean_HD_activity = HD_cells(256,4,action, hx_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/3/rnn/hx', plot=False)
 
     # action_goal_angles = goal_direction_cell(256, trial_counter, target_loc, location, action, hx_activity, '/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/rnn/hx', plot=True)
+
+    rnn_params = get_rnn_weights('/Users/dongyanlin/Desktop/TEM_RL/SimpleNav_data/trained_agent/conv_rnn_Epi49999.pt', agent_type='conv_rnn', num_neurons=256,size=5)
+    weight_matrix = rnn_params['weight_hh'][:256].detach().numpy()  # TODO: play with this
+    max_loc, cell_num_by_max_location = get_cell_num_by_max_location(5, 256, location, hx_activity)
+    max_HD, cell_num_by_max_HD = get_cell_num_by_max_HD(action, hx_activity)
+
+    neighbour_dict, connection_dict = neighbours_and_connections(5, 256, location, hx_activity, weight_matrix)
+
+    # TODO: think about what to do from here
+    i_neuron = 251
+    print(max_HD[i_neuron])
+    for HD in ['Right', 'Up', 'Left', 'Down']:
+        if HD in list(connection_dict[i_neuron].keys()):
+            print(HD, np.mean(connection_dict[i_neuron]['Left']))
+    # if you want to check sorted weights. Otherwise comment these lines out
+    # plt.figure()
+    # plt.imshow(sort_weight_matrix(weight_matrix, cell_num_by_max_HD))
+    # plt.imshow()
