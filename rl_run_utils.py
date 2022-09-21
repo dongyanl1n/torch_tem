@@ -81,7 +81,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                 'v_loss': v_loss
             }, os.path.join(save_dir, f'{agent_type}_Epi{i_episode}.pt'))
     if record_activity:  # zip recorded data
-        if agent_type == "mlp":
+        if agent_type == "mlp" or agent_type == 'conv_mlp':
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
                     "action": np.array(action),
@@ -90,7 +90,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
                     "lin_1_activity": np.array(lin_1_activity),
                     "lin_2_activity": np.array(lin_2_activity),
                     "steps_taken": np.array(steps_taken)}
-        elif agent_type == "rnn":
+        elif agent_type == "rnn" or agent_type == 'conv_rnn':
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
                     "action": np.array(action),
@@ -109,6 +109,7 @@ def train_neural_net_on_SimpleNavigation(env, agent, optimizer, num_episodes, sa
 
 def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, save_model_freq, save_dir, agent_type, num_episodes_per_block=2, record_activity=False):
     assert isinstance(agent, AC_Conv_Net), "agent has to have convolutional component because images are used as inputs here"
+    assert agent_type == "conv_mlp" or agent_type == "conv_rnn", "agent has to have convolutional component because images are used as inputs here"
     steps_taken = []
     if record_activity:
         trial_counter = []
@@ -148,13 +149,13 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                 action.append(act)
                 trial_counter.append(i_episode)
                 location.append(observation["agent"])
-                if agent_type == "mlp":
-                    lin_1_activity.append(agent.cell_out[0].clone().detach().cpu().numpy().squeeze())
-                    lin_2_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
-                elif agent_type == "rnn":
-                    hx_activity.append(agent.hx[0].clone().detach().cpu().numpy().squeeze())
-                    cx_activity.append(agent.cx[0].clone().detach().cpu().numpy().squeeze())
-                    lin_activity.append(agent.cell_out[1].clone().detach().cpu().numpy().squeeze())
+                if agent_type == "conv_mlp":
+                    lin_1_activity.append(agent.cell_out[agent.hidden_types.index("linear")].clone().detach().cpu().numpy().squeeze())
+                    lin_2_activity.append(agent.cell_out[agent.hidden_types.index("linear")+1].clone().detach().cpu().numpy().squeeze())
+                elif agent_type == "conv_rnn":
+                    hx_activity.append(agent.hx[agent.hidden_types.index("lstm")].clone().detach().cpu().numpy().squeeze())
+                    cx_activity.append(agent.cx[agent.hidden_types.index("lstm")].clone().detach().cpu().numpy().squeeze())
+                    lin_activity.append(agent.cell_out[agent.hidden_types.index("lstm")+1].clone().detach().cpu().numpy().squeeze())
             observation, reward, done, info = env.step(act)
             agent.rewards.append(reward)
             step_counter += 1
@@ -170,7 +171,7 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                 'v_loss': v_loss
             }, os.path.join(save_dir, f'{agent_type}_Epi{i_episode}.pt'))
     if record_activity:  # zip recorded data
-        if agent_type == "mlp":
+        if agent_type == "conv_mlp":
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
                     "action": np.array(action),
@@ -179,7 +180,7 @@ def train_neural_net_on_MorrisWaterMaze(env, agent, optimizer, num_episodes, sav
                     "lin_1_activity": np.array(lin_1_activity),
                     "lin_2_activity": np.array(lin_2_activity),
                     "steps_taken": np.array(steps_taken)}
-        elif agent_type == "rnn":
+        elif agent_type == "conv_rnn":
             data = {"init_loc": init_loc,
                     "target_loc": target_loc,
                     "action": np.array(action),
