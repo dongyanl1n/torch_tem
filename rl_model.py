@@ -212,6 +212,7 @@ class AC_Conv_Net(nn.Module):
         elif type(input_dimensions) == tuple:
             assert (hidden_types[0] == 'conv' or hidden_types[0] == 'pool')
             self.input_type = 'frame'
+            self.hidden_types = hidden_types
 
         # store the batch size
         self.batch_size = batch_size
